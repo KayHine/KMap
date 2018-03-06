@@ -1,26 +1,46 @@
 import java.awt.image.BufferedImage;
 
 public class QTreeNode {
-    private QTreeNode childTopLeft;
-    private QTreeNode childTopRight;
-    private QTreeNode childBottomLeft;
-    private QTreeNode childBottomRight;
-    private QTreeNode parent;
+    // children[0] - upper left child
+    // children[1] - upper right child
+    // children[2] - lower left child
+    // children[3] - lower right child
+    private QTreeNode[] children;
     private BufferedImage img;
+    private double ullat, ullon, lrlat, lrlon;
 
+    // constructor for QTreeNode
+    // children will get populated by put method in QuadTree
     public QTreeNode(
-            QTreeNode parent,
-            QTreeNode childTopLeft,
-            QTreeNode childTopRight,
-            QTreeNode childBottomLeft,
-            QTreeNode childBottomRight,
+            double ullat,
+            double ullon,
+            double lrlat,
+            double lrlon,
             BufferedImage img) {
-
-        this.parent = parent;
-        this.childTopLeft = childTopLeft;
-        this.childTopRight = childTopRight;
-        this.childBottomLeft = childBottomLeft;
-        this.childBottomRight = childBottomRight;
+        this.ullat = ullat;
+        this.ullon = ullon;
+        this.lrlat = lrlat;
+        this.lrlon = lrlon;
         this.img = img;
+    }
+
+    public double getUllat() {
+        return ullat;
+    }
+
+    public double getUllon() {
+        return ullon;
+    }
+
+    public double getLrlat() {
+        return lrlat;
+    }
+
+    public double getLrlon() {
+        return lrlon;
+    }
+
+    public QTreeNode[] getChildren() {
+        return children;
     }
 }
