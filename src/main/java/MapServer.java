@@ -203,6 +203,20 @@ public class MapServer {
      */
     public static Map<String, Object> getMapRaster(Map<String, Double> params, OutputStream os) {
         HashMap<String, Object> rasteredImageParams = new HashMap<>();
+         /**
+         *   1. calculate distance per pixel (dpp) from params - (LRLON - ULLON) / WIDTH
+          *     a. calculate dpp of root node (node_dpp) - (LRLON - ULLON) / TILE_SIZE
+          *  2. Build QuadTree
+          *     a. add root node
+          *     b. while (node_dpp > dpp)
+          *         1. find quadrants that viewing box falls in
+          *         2. create corresponding nodes
+          *         3. add to QuadTree
+          *         4. calculate new node_dpp at this level
+          * 3. build raster image list by calling level traversal
+          * 4. build the raster box
+          * 5. Set key-values for rasterImageParams
+         */
         return rasteredImageParams;
     }
 
