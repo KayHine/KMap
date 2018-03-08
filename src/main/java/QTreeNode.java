@@ -22,6 +22,7 @@ public class QTreeNode {
         this.lrlat = lrlat;
         this.lrlon = lrlon;
         this.img = img;
+        this.children = new QTreeNode[4];
     }
 
     public double getUllat() {

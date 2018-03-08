@@ -13,7 +13,7 @@ public class QuadTree {
         root = put(root, ullat, ullon, lrlat, lrlon, img);
     }
 
-    // help function to add a node to the quad tree
+    // put function to insert more nodes
     public QTreeNode put(QTreeNode node,
                     double ullat,
                     double ullon,
@@ -25,32 +25,50 @@ public class QuadTree {
             return new QTreeNode(ullat, ullon, lrlat, lrlon, img);
         }
 
+        // Check bounds of incoming coordinates
+        // Returning null may break things - if we add an out of bound element,
+        // does that set root to null???
+        // Maybe we can throw an error instead?
+        if (!inBound(node, ullat, ullon, lrlat, lrlon)) return null;
+
         QTreeNode[] nodeChildren = node.getChildren();
 
         // calculate children nodes by comparing coordinates to current node
-        // upper left child
-        if (ullat == node.getUllat() && ullon == node.getUllon()
-                && lrlat / 2 == node.getLrlat() && lrlon / 2 == node.getLrlon()) {
-            nodeChildren[0] =
-                    put(nodeChildren[0], ullat, ullon, lrlat, lrlon, img);
-            // upper right child
-        } else if (ullat == node.getUllat() && ullon == node.getLrlat() / 2
-                && lrlon == node.getLrlon() && lrlat == node.getUllat() / 2) {
-            nodeChildren[1] =
-                    put(nodeChildren[1], ullat, ullon, lrlat, lrlon, img);
-            // lower left child
-        } else if (ullon == node.getUllon() && ullat == node.getUllat()/2
-                && lrlon == node.getLrlon() / 2 && lrlat == node.getLrlat()) {
-            nodeChildren[2] =
-                    put(nodeChildren[2], ullat, ullon, lrlat, lrlon, img);
-            // lower right child
-        } else if (ullon == node.getUllon() / 2 && ullat == node.getUllat() / 2
-                && lrlon == node.getLrlon() && lrlat == node.getLrlat()) {
-            nodeChildren[3] =
-                    put(nodeChildren[3], ullat, ullon, lrlat, lrlon, img);
+        // Indicates left half
+        if (ullon <= (node.getLrlon() + node.getUllon()) / 2) {
+            // Indicates top left tree
+            if (lrlat >= (node.getLrlat() + node.getUllat()) / 2) {
+                nodeChildren[0] =
+                        put(nodeChildren[0], ullat, ullon, lrlat, lrlon, img);
+            }
+            else {
+                nodeChildren[2] =
+                        put(nodeChildren[2], ullat, ullon, lrlat, lrlon, img);
+            }
+            // Indicates right half
+        } else {
+            // Indicates top right tree
+            if (lrlat >= (node.getLrlat() + node.getUllat()) / 2) {
+                nodeChildren[1] =
+                        put(nodeChildren[1], ullat, ullon, lrlat, lrlon, img);
+            } else {
+                nodeChildren[3] =
+                        put(nodeChildren[3], ullat, ullon, lrlat, lrlon, img);
+            }
         }
 
         return node;
     }
 
+    private boolean inBound(QTreeNode node,
+                            double ullat,
+                            double ullon,
+                            double lrlat,
+                            double lrlon) {
+
+        return (ullat <= node.getUllat() &&
+                ullon >= node.getUllon() &&
+                lrlat >= node.getLrlat() &&
+                lrlon <= node.getLrlon());
+    }
 }
