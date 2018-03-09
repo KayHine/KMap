@@ -12,10 +12,10 @@ public class QTreeNode {
     // constructor for QTreeNode
     // children will get populated by put method in QuadTree
     public QTreeNode(
-            double ullat,
             double ullon,
-            double lrlat,
+            double ullat,
             double lrlon,
+            double lrlat,
             BufferedImage img) {
         this.ullat = ullat;
         this.ullon = ullon;

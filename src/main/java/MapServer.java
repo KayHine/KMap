@@ -223,46 +223,95 @@ public class MapServer {
           * 4. build the raster box
           * 5. Set key-values for rasterImageParams
          */
+         double windowWidth = params.get("w");
+         double windowHeight = params.get("h");
+         double winUllon = params.get("ullon");
+         double winUllat = params.get("ullat");
+         double winLrlon = params.get("lrlon");
+         double winLrlat = params.get("lrlat");
 
-         // Doing some POC here
+         double dpp = (winLrlon - winUllon) / windowWidth;
+         double root_dpp = (ROOT_LRLON - ROOT_ULLON) / TILE_SIZE;
+
+         BufferedImage root_pic = null;
+
+        try {
+            root_pic = ImageIO.read(new File(IMG_ROOT + "root.png"));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        QuadTree map = new QuadTree();
+        map.put(ROOT_ULLON, ROOT_ULLAT, ROOT_LRLON, ROOT_LRLAT, root_pic);
+
+
+        // TODO: function to split current node into 4 quadrants
+
+
+/*         // Doing some POC here
         rasteredImageParams.put("raster_ul_lon", ROOT_ULLON);
         rasteredImageParams.put("raster_ul_lat", ROOT_ULLAT);
         rasteredImageParams.put("raster_lr_lon", ROOT_LRLON);
         rasteredImageParams.put("raster_lr_lat", ROOT_LRLAT);
-        rasteredImageParams.put("raster_width", 600);
-        rasteredImageParams.put("raster_height", 929);
+        rasteredImageParams.put("raster_width", 2048);
+        rasteredImageParams.put("raster_height", 2048);
         rasteredImageParams.put("depth", 0);
         rasteredImageParams.put("query_success", true);
 
-        BufferedImage results = new BufferedImage(512, 512, BufferedImage.TYPE_INT_RGB);
+        BufferedImage results = new BufferedImage(2048, 2048, BufferedImage.TYPE_INT_RGB);
         Graphics g = results.getGraphics();
 
         int x = 0;
         int y = 0;
 
-        String[] images = {"1.png", "2.png", "3.png", "4.png"};
-        for (String image : images) {
-            try {
+        String[] images = {
+                "111.png", "112.png", "121.png", "122.png", "211.png", "212.png", "221.png", "222.png",
+                "113.png", "114.png", "123.png", "124.png", "213.png", "214.png", "223.png", "224.png",
+                "131.png", "132.png", "141.png", "142.png", "231.png", "232.png", "241.png", "242.png",
+                "133.png", "134.png", "143.png", "144.png", "233.png", "234.png", "243.png", "244.png",
+                "311.png", "312.png", "321.png", "322.png", "411.png", "412.png", "421.png", "422.png",
+                "313.png", "314.png", "324.png", "324.png", "413.png", "414.png", "423.png", "424.png",
+                "331.png", "332.png", "341.png", "342.png", "431.png", "432.png", "441.png", "422.png",
+                "333.png", "334.png", "344.png", "344.png", "433.png", "434.png", "443.png", "444.png",};
+        try {
+
+            for (String image : images) {
                 BufferedImage bi = ImageIO.read(new File(IMG_ROOT + image));
-                g.drawImage(bi, x, y, null);
-                x += 256;
-                if (x > results.getWidth()) {
+
+                if (x >= results.getWidth()) {
                     x = 0;
                     y += bi.getHeight();
                 }
 
-            } catch (IOException e) {
-                e.printStackTrace();
+                g.drawImage(bi, x, y, null);
+                x += 256;
             }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
 
         try {
             ImageIO.write(results, "png", os);
         } catch (IOException e) {
             e.printStackTrace();
-        }
+        }*/
 
         return rasteredImageParams;
+    }
+
+    public void buildTree(double[] node,
+                          double[] target,
+                          double dpp,
+                          double node_dpp) {
+
+        // base case
+        if (node_dpp < dpp) {
+            return;
+        }
+
+        double avg_lon = (node[0] + node[2]) / 2;
+        double avg_lat = (node[1] + node[4]) / 2;
+
     }
 
     /**
