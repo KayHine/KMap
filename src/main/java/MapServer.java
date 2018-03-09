@@ -1,6 +1,10 @@
-import java.awt.Color;
+import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.Buffer;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -10,6 +14,8 @@ import java.util.Set;
 
 /* Maven is used to pull in these dependencies. */
 import com.google.gson.Gson;
+
+import javax.imageio.ImageIO;
 
 import static spark.Spark.*;
 
@@ -217,6 +223,45 @@ public class MapServer {
           * 4. build the raster box
           * 5. Set key-values for rasterImageParams
          */
+
+         // Doing some POC here
+        rasteredImageParams.put("raster_ul_lon", ROOT_ULLON);
+        rasteredImageParams.put("raster_ul_lat", ROOT_ULLAT);
+        rasteredImageParams.put("raster_lr_lon", ROOT_LRLON);
+        rasteredImageParams.put("raster_lr_lat", ROOT_LRLAT);
+        rasteredImageParams.put("raster_width", 600);
+        rasteredImageParams.put("raster_height", 929);
+        rasteredImageParams.put("depth", 0);
+        rasteredImageParams.put("query_success", true);
+
+        BufferedImage results = new BufferedImage(512, 512, BufferedImage.TYPE_INT_RGB);
+        Graphics g = results.getGraphics();
+
+        int x = 0;
+        int y = 0;
+
+        String[] images = {"1.png", "2.png", "3.png", "4.png"};
+        for (String image : images) {
+            try {
+                BufferedImage bi = ImageIO.read(new File(IMG_ROOT + image));
+                g.drawImage(bi, x, y, null);
+                x += 256;
+                if (x > results.getWidth()) {
+                    x = 0;
+                    y += bi.getHeight();
+                }
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        try {
+            ImageIO.write(results, "png", os);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
         return rasteredImageParams;
     }
 
