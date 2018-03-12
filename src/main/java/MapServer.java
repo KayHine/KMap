@@ -231,57 +231,13 @@ public class MapServer {
         double[] root_coord = {ROOT_ULLON, ROOT_ULLAT, ROOT_LRLON, ROOT_LRLAT};
         double[] target_coord = {winUllon, winUllat, winLrlon, winLrlat};
 
+        // Recursively build the tree based on the viewing window
         buildTree(root_coord, target_coord, dpp, root_dpp, "root", tree);
         treeHeight = tree.getHeight();
         tree.getLowestLevel(treeHeight, rasters);
 
-/*         // Doing some POC here
-        rasteredImageParams.put("raster_ul_lon", ROOT_ULLON);
-        rasteredImageParams.put("raster_ul_lat", ROOT_ULLAT);
-        rasteredImageParams.put("raster_lr_lon", ROOT_LRLON);
-        rasteredImageParams.put("raster_lr_lat", ROOT_LRLAT);
-        rasteredImageParams.put("raster_width", 2048);
-        rasteredImageParams.put("raster_height", 2048);
-        rasteredImageParams.put("depth", 0);
-        rasteredImageParams.put("query_success", true);
+        // Build the actual image now
 
-        BufferedImage results = new BufferedImage(2048, 2048, BufferedImage.TYPE_INT_RGB);
-        Graphics g = results.getGraphics();
-
-        int x = 0;
-        int y = 0;
-
-        String[] images = {
-                "111.png", "112.png", "121.png", "122.png", "211.png", "212.png", "221.png", "222.png",
-                "113.png", "114.png", "123.png", "124.png", "213.png", "214.png", "223.png", "224.png",
-                "131.png", "132.png", "141.png", "142.png", "231.png", "232.png", "241.png", "242.png",
-                "133.png", "134.png", "143.png", "144.png", "233.png", "234.png", "243.png", "244.png",
-                "311.png", "312.png", "321.png", "322.png", "411.png", "412.png", "421.png", "422.png",
-                "313.png", "314.png", "324.png", "324.png", "413.png", "414.png", "423.png", "424.png",
-                "331.png", "332.png", "341.png", "342.png", "431.png", "432.png", "441.png", "422.png",
-                "333.png", "334.png", "344.png", "344.png", "433.png", "434.png", "443.png", "444.png",};
-        try {
-
-            for (String image : images) {
-                BufferedImage bi = ImageIO.read(new File(IMG_ROOT + image));
-
-                if (x >= results.getWidth()) {
-                    x = 0;
-                    y += bi.getHeight();
-                }
-
-                g.drawImage(bi, x, y, null);
-                x += 256;
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        try {
-            ImageIO.write(results, "png", os);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }*/
 
         return rasteredImageParams;
     }
@@ -292,9 +248,94 @@ public class MapServer {
                                  double node_dpp,
                                  String imgName,
                                  QuadTree tree) {
+        // Base case
+        if (node_dpp < dpp) {
+            return;
+        }
 
+        double node_ullon, node_ullat, node_lrlon, node_lrlat;
+
+        node_ullon = node[0];
+        node_ullat = node[1];
+        node_lrlon = node[2];
+        node_lrlat = node[3];
+
+        double avg_lon = (node_ullon + node_lrlon) / 2;
+        double avg_lat = (node_ullat + node_lrlat) / 2;
+
+        double[] topLeftChild = {node_ullon, node_ullat, avg_lon, avg_lat + Math.pow(10, -9)};
+        double[] topRightChild = {avg_lon + Math.pow(10, -9), node_ullat, node_lrlon, avg_lat + + Math.pow(10, -9)};
+        double[] bottomLeftChild = {node_ullon, avg_lat, avg_lon, node_lrlat};
+        double[] bottomRightChild = {avg_lon + Math.pow(10, -9), avg_lat, node_lrlon, node_lrlat};
+
+        node_dpp = (avg_lon - node_ullon) / TILE_SIZE;
+        String filename = imgName;
+
+        if (isInBound(topLeftChild, target)) {
+            if (imgName == "root") {
+                filename = "1";
+            } else {
+                filename = filename + "1";
+            }
+            BufferedImage newImage = makeImage(filename);
+            tree.put(topLeftChild[0], topLeftChild[1], topLeftChild[2],
+                    topLeftChild[3], filename, newImage);
+            buildTree(topLeftChild, target, dpp, node_dpp, filename, tree);
+        }
+
+        filename = imgName;
+        if (isInBound(topRightChild, target)) {
+            if (imgName == "root") {
+                filename = "2";
+            } else {
+                filename = filename + "2";
+            }
+            BufferedImage newImage = makeImage(filename);
+            tree.put(topRightChild[0], topRightChild[1], topRightChild[2],
+                    topRightChild[3], filename, newImage);
+            buildTree(topRightChild, target, dpp, node_dpp, filename, tree);
+        }
+
+        filename = imgName;
+        if (isInBound(bottomLeftChild, target)) {
+            if (imgName == "root") {
+                filename = "3";
+            } else {
+                filename = filename + "3";
+            }
+            BufferedImage newImage = makeImage(filename);
+            tree.put(bottomLeftChild[0], bottomLeftChild[1], bottomLeftChild[2],
+                    bottomLeftChild[3], filename, newImage);
+            buildTree(bottomLeftChild, target, dpp, node_dpp, filename, tree);
+        }
+
+        filename = imgName;
+        if (isInBound(bottomRightChild, target)) {
+            if (imgName == "root") {
+                filename = "4";
+            } else {
+                filename = filename + "4";
+            }
+            BufferedImage newImage = makeImage(filename);
+            tree.put(bottomRightChild[0], bottomRightChild[1], bottomRightChild[2],
+                    bottomRightChild[3], filename, newImage);
+            buildTree(bottomRightChild, target, dpp, node_dpp, filename, tree);
+        }
     }
 
+    public static boolean isInBound(double[] node, double[] target) {
+        // If one rectangle is on the left side of the other
+        if (node[0] > target[2] || target[0] > node[2]) {
+            return false;
+        }
+
+        // If one rectangle is above the other
+        if (node[1] < target[3] || target[1] < node[3]) {
+            return false;
+        }
+
+        return true;
+    }
 
     public static BufferedImage makeImage(String imgName) {
         BufferedImage img = null;
