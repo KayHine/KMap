@@ -1,4 +1,5 @@
 import java.awt.image.BufferedImage;
+import java.util.Iterator;
 import java.util.LinkedList;
 
 public class QuadTree {
@@ -10,8 +11,9 @@ public class QuadTree {
                     double ullat,
                     double lrlon,
                     double lrlat,
+                    String imageName,
                     BufferedImage img) {
-        root = put(root, ullon, ullat, lrlon, lrlat, img);
+        root = put(root, ullon, ullat, lrlon, lrlat, imageName, img);
     }
 
     /**
@@ -30,10 +32,11 @@ public class QuadTree {
                     double ullat,
                     double lrlon,
                     double lrlat,
+                    String imageName,
                     BufferedImage img) {
         // if tree is empty, make a node
         if (node == null) {
-            return new QTreeNode(ullon, ullat, lrlon, lrlat, img);
+            return new QTreeNode(ullon, ullat, lrlon, lrlat, imageName, img);
         }
 
         // Check bounds of incoming coordinates
@@ -42,33 +45,35 @@ public class QuadTree {
         // Maybe we can throw an error instead?
         if (!inBound(node, ullon, ullat, lrlon, lrlat)) return null;
 
-        QTreeNode[] nodeChildren = node.getChildren();
-
         // calculate children nodes by comparing coordinates to current node
         // Indicates left half
-        if (ullon <= (node.getLrlon() + node.getUllon()) / 2) {
+        if (ullon <= (node.lrlon + node.ullon) / 2) {
             // Indicates top left tree
-            if (lrlat >= (node.getLrlat() + node.getUllat()) / 2) {
-                nodeChildren[0] =
-                        put(nodeChildren[0], ullon, ullat, lrlon, lrlat, img);
+            if (lrlat > (node.lrlat + node.ullat) / 2) {
+                node.topLeft =
+                        put(node.topLeft, ullon, ullat, lrlon, lrlat, imageName, img);
             }
             else {
-                nodeChildren[2] =
-                        put(nodeChildren[2], ullon, ullat, lrlon, lrlat, img);
+                node.bottomLeft =
+                        put(node.bottomLeft, ullon, ullat, lrlon, lrlat, imageName, img);
             }
             // Indicates right half
         } else {
             // Indicates top right tree
-            if (lrlat >= (node.getLrlat() + node.getUllat()) / 2) {
-                nodeChildren[1] =
-                        put(nodeChildren[1], ullon, ullat, lrlon, lrlat, img);
+            if (lrlat > (node.lrlat + node.ullat) / 2) {
+                node.topRight =
+                        put(node.topRight, ullon, ullat, lrlon, lrlat, imageName, img);
             } else {
-                nodeChildren[3] =
-                        put(nodeChildren[3], ullon, ullat, lrlon, lrlat, img);
+                node.bottomRight =
+                        put(node.bottomRight, ullon, ullat, lrlon, lrlat, imageName, img);
             }
         }
 
         return node;
+    }
+
+    public void getLowestLevel(int level, Iterable<QTreeNode> raster) {
+        getLowestLevel(root, level, raster);
     }
 
     /**
@@ -83,12 +88,15 @@ public class QuadTree {
         if (level == 1) {
             ((LinkedList<QTreeNode>) raster).add(node);
         } else if (level > 1) {
-            QTreeNode[] children = node.getChildren();
-            getLowestLevel(children[0], level - 1, raster);
-            getLowestLevel(children[1], level - 1, raster);
-            getLowestLevel(children[2], level - 1, raster);
-            getLowestLevel(children[3], level - 1, raster);
+            getLowestLevel(node.topLeft, level - 1, raster);
+            getLowestLevel(node.topRight, level - 1, raster);
+            getLowestLevel(node.bottomLeft, level - 1, raster);
+            getLowestLevel(node.bottomRight, level - 1, raster);
         }
+    }
+
+    public int getHeight() {
+        return getHeight(root);
     }
 
     /**
@@ -100,12 +108,11 @@ public class QuadTree {
         if (node == null) {
             return 0;
         } else {
-            QTreeNode[] children = node.getChildren();
             // compute the height of each substree
-            int ULheight = getHeight(children[0]);
-            int URheight = getHeight(children[1]);
-            int LLheight = getHeight(children[2]);
-            int LRheight = getHeight(children[3]);
+            int ULheight = getHeight(node.topLeft);
+            int URheight = getHeight(node.topRight);
+            int LLheight = getHeight(node.bottomLeft);
+            int LRheight = getHeight(node.bottomRight);
 
             // use the larger one
             int max = Math.max(Math.max(ULheight, URheight), Math.max(LLheight, LRheight));
@@ -136,9 +143,9 @@ public class QuadTree {
                             double lrlon,
                             double lrlat) {
 
-        return (ullat <= node.getUllat() &&
-                ullon >= node.getUllon() &&
-                lrlat >= node.getLrlat() &&
-                lrlon <= node.getLrlon());
+        return (ullat <= node.ullat &&
+                ullon >= node.ullon &&
+                lrlat >= node.lrlat &&
+                lrlon <= node.lrlon);
     }
 }

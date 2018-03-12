@@ -209,44 +209,31 @@ public class MapServer {
      */
     public static Map<String, Object> getMapRaster(Map<String, Double> params, OutputStream os) {
         HashMap<String, Object> rasteredImageParams = new HashMap<>();
-         /**
-         *   1. calculate distance per pixel (dpp) from params - (LRLON - ULLON) / WIDTH
-          *     a. calculate dpp of root node (node_dpp) - (LRLON - ULLON) / TILE_SIZE
-          *  2. Build QuadTree
-          *     a. add root node
-          *     b. while (node_dpp > dpp)
-          *         1. find quadrants that viewing box falls in
-          *         2. create corresponding nodes
-          *         3. add to QuadTree
-          *         4. calculate new node_dpp at this level
-          * 3. build raster image list by calling level traversal
-          * 4. build the raster box
-          * 5. Set key-values for rasterImageParams
-         */
-         double windowWidth = params.get("w");
-         double windowHeight = params.get("h");
-         double winUllon = params.get("ullon");
-         double winUllat = params.get("ullat");
-         double winLrlon = params.get("lrlon");
-         double winLrlat = params.get("lrlat");
+        LinkedList<QTreeNode> rasters = new LinkedList<>();
+        QuadTree tree = new QuadTree();
+        int treeHeight = 0;
+        double dpp = (params.get("lrlon") - params.get("ullon")) / params.get("w");
 
-         double dpp = (winLrlon - winUllon) / windowWidth;
-         double root_dpp = (ROOT_LRLON - ROOT_ULLON) / TILE_SIZE;
+        cleanParams(params);
 
-         BufferedImage root_pic = null;
+        double winUllon = params.get("ullon");
+        double winUllat = params.get("ullat");
+        double winLrlon = params.get("lrlon");
+        double winLrlat = params.get("lrlat");
 
-        try {
-            root_pic = ImageIO.read(new File(IMG_ROOT + "root.png"));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        double root_dpp = (ROOT_LRLON - ROOT_ULLON) / TILE_SIZE;
 
-        QuadTree map = new QuadTree();
-        map.put(ROOT_ULLON, ROOT_ULLAT, ROOT_LRLON, ROOT_LRLAT, root_pic);
+        BufferedImage root_pic = null;
+        root_pic = makeImage("root");
 
+        tree.put(ROOT_ULLON, ROOT_ULLAT, ROOT_LRLON, ROOT_LRLAT, "root", root_pic);
 
-        // TODO: function to split current node into 4 quadrants
+        double[] root_coord = {ROOT_ULLON, ROOT_ULLAT, ROOT_LRLON, ROOT_LRLAT};
+        double[] target_coord = {winUllon, winUllat, winLrlon, winLrlat};
 
+        buildTree(root_coord, target_coord, dpp, root_dpp, "root", tree);
+        treeHeight = tree.getHeight();
+        tree.getLowestLevel(treeHeight, rasters);
 
 /*         // Doing some POC here
         rasteredImageParams.put("raster_ul_lon", ROOT_ULLON);
@@ -299,19 +286,47 @@ public class MapServer {
         return rasteredImageParams;
     }
 
-    public void buildTree(double[] node,
-                          double[] target,
-                          double dpp,
-                          double node_dpp) {
+    public static void buildTree(double[] node,
+                                 double[] target,
+                                 double dpp,
+                                 double node_dpp,
+                                 String imgName,
+                                 QuadTree tree) {
 
-        // base case
-        if (node_dpp < dpp) {
-            return;
+    }
+
+
+    public static BufferedImage makeImage(String imgName) {
+        BufferedImage img = null;
+        try {
+            img = ImageIO.read(new File(IMG_ROOT + imgName + ".png"));
+        } catch (IOException e) {
+            e.printStackTrace();
         }
+        return img;
+    }
 
-        double avg_lon = (node[0] + node[2]) / 2;
-        double avg_lat = (node[1] + node[4]) / 2;
-
+    public static void cleanParams(Map<String, Double> params) {
+        double winUllon = params.get("ullon");
+        double winUllat = params.get("ullat");
+        double winLrlon = params.get("lrlon");
+        double winLrlat = params.get("lrlat");
+        if (winUllon < ROOT_ULLON) {
+            winUllon = ROOT_ULLON;
+        }
+        if (winUllat > ROOT_ULLAT) {
+            winUllat = ROOT_ULLAT;
+        }
+        if (winLrlon > ROOT_LRLON) {
+            winLrlon = ROOT_LRLON;
+        }
+        if (winLrlat < ROOT_LRLAT) {
+            winLrlat = ROOT_LRLAT;
+        }
+        params.put("ullon", winUllon);
+        params.put("ullat", winUllat);
+        params.put("lrlon", winLrlon);
+        params.put("lrlat", winLrlat);
     }
 
     /**
