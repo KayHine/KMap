@@ -1,6 +1,6 @@
 import java.awt.image.BufferedImage;
-import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.Map;
 
 public class QuadTree {
 
@@ -72,8 +72,9 @@ public class QuadTree {
         return node;
     }
 
-    public void getLowestLevel(int level, Iterable<QTreeNode> raster) {
-        getLowestLevel(root, level, raster);
+    public void getLowestLevel(int level, Iterable<QTreeNode> raster,
+                               Map<Double, Integer> latitudes) {
+        getLowestLevel(root, level, raster, latitudes);
     }
 
     /**
@@ -83,15 +84,22 @@ public class QuadTree {
      * @param raster: an iterable Object that you're adding the QTreeNodes to
      */
     // Takes an iterable Object and adds the QTreeNodes on the bottom level
-    public void getLowestLevel(QTreeNode node, int level, Iterable<QTreeNode> raster) {
+    public void getLowestLevel(QTreeNode node, int level, Iterable<QTreeNode> raster, Map<Double, Integer> latitudes) {
         if (node == null) return;
         if (level == 1) {
+            // Build the list of QTnodes that we need to create the image
             ((LinkedList<QTreeNode>) raster).add(node);
+            // Build a Map of the count of the latitudes <Latitude, Count of Latitude>
+            if (!latitudes.containsKey(node.ullat)) {
+                latitudes.put(node.ullat, 1);
+            } else {
+                latitudes.put(node.ullat, latitudes.get(node.ullat) + 1);
+            }
         } else if (level > 1) {
-            getLowestLevel(node.topLeft, level - 1, raster);
-            getLowestLevel(node.topRight, level - 1, raster);
-            getLowestLevel(node.bottomLeft, level - 1, raster);
-            getLowestLevel(node.bottomRight, level - 1, raster);
+            getLowestLevel(node.topLeft, level - 1, raster, latitudes);
+            getLowestLevel(node.topRight, level - 1, raster, latitudes);
+            getLowestLevel(node.bottomLeft, level - 1, raster, latitudes);
+            getLowestLevel(node.bottomRight, level - 1, raster, latitudes);
         }
     }
 

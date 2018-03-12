@@ -4,13 +4,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.nio.Buffer;
-import java.util.Base64;
-import java.util.HashMap;
-import java.util.LinkedList;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 /* Maven is used to pull in these dependencies. */
 import com.google.gson.Gson;
@@ -172,7 +167,6 @@ public class MapServer {
         return params;
     }
 
-
     /**
      * Handles raster API calls, queries for tiles and rasters the full image. <br>
      * <p>
@@ -209,9 +203,12 @@ public class MapServer {
      */
     public static Map<String, Object> getMapRaster(Map<String, Double> params, OutputStream os) {
         HashMap<String, Object> rasteredImageParams = new HashMap<>();
+        HashMap<Double, Integer> latitudes = new HashMap<>();
         LinkedList<QTreeNode> rasters = new LinkedList<>();
         QuadTree tree = new QuadTree();
+        BufferedImage rasterImage;
         int treeHeight = 0;
+
         double dpp = (params.get("lrlon") - params.get("ullon")) / params.get("w");
 
         cleanParams(params);
@@ -234,14 +231,72 @@ public class MapServer {
         // Recursively build the tree based on the viewing window
         buildTree(root_coord, target_coord, dpp, root_dpp, "root", tree);
         treeHeight = tree.getHeight();
-        tree.getLowestLevel(treeHeight, rasters);
+        tree.getLowestLevel(treeHeight, rasters, latitudes);
 
         // Build the actual image now
+        Collections.sort(rasters, Collections.reverseOrder());
+        rasterImage = createRasterImage(rasters, latitudes);
+
+        try {
+            ImageIO.write(rasterImage, "png", os);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        // Build the rasteredImageParams map
+        rasteredImageParams.put("raster_ul_lon", rasters.getFirst().ullon);
+        rasteredImageParams.put("raster_ul_lat", rasters.getFirst().ullat);
+        rasteredImageParams.put("raster_lr_lon", rasters.getLast().lrlon);
+        rasteredImageParams.put("raster_lr_lat", rasters.getLast().lrlat);
+        rasteredImageParams.put("raster_width", rasterImage.getWidth());
+        rasteredImageParams.put("raster_height", rasterImage.getHeight());
+        rasteredImageParams.put("depth", rasters.getFirst().imageName.length());
+        if (rasterImage == null) {
+            rasteredImageParams.put("query_success", false);
+        } else {
+            rasteredImageParams.put("query_success", true);
+
+        }
 
 
         return rasteredImageParams;
     }
 
+    public static BufferedImage createRasterImage(LinkedList<QTreeNode> rasters,
+                                       HashMap<Double, Integer> latitudes) {
+        double lat = rasters.getFirst().ullat;
+        int width = latitudes.get(lat) * TILE_SIZE;
+        int height = latitudes.size() * TILE_SIZE;
+        int x = 0;
+        int y = 0;
+
+        BufferedImage os = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+        Graphics g = os.getGraphics();
+        Iterator it = rasters.iterator();
+
+        while (it.hasNext()) {
+            if (x >= os.getWidth()) {
+                x = 0;
+                y += TILE_SIZE;
+            }
+
+            QTreeNode node = (QTreeNode) it.next();
+            g.drawImage(node.img, x, y, null);
+            x += TILE_SIZE;
+        }
+
+        return os;
+    }
+
+    /**
+     *
+     * @param node
+     * @param target
+     * @param dpp
+     * @param node_dpp
+     * @param imgName
+     * @param tree
+     */
     public static void buildTree(double[] node,
                                  double[] target,
                                  double dpp,
@@ -323,6 +378,12 @@ public class MapServer {
         }
     }
 
+    /**
+     *
+     * @param node
+     * @param target
+     * @return
+     */
     public static boolean isInBound(double[] node, double[] target) {
         // If one rectangle is on the left side of the other
         if (node[0] > target[2] || target[0] > node[2]) {
@@ -337,6 +398,11 @@ public class MapServer {
         return true;
     }
 
+    /**
+     *
+     * @param imgName
+     * @return
+     */
     public static BufferedImage makeImage(String imgName) {
         BufferedImage img = null;
         try {
@@ -347,6 +413,10 @@ public class MapServer {
         return img;
     }
 
+    /**
+     *
+     * @param params
+     */
     public static void cleanParams(Map<String, Double> params) {
         double winUllon = params.get("ullon");
         double winUllat = params.get("ullat");

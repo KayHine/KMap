@@ -1,6 +1,6 @@
 import java.awt.image.BufferedImage;
 
-public class QTreeNode {
+public class QTreeNode implements Comparable<QTreeNode> {
     // children[0] - upper left child
     // children[1] - upper right child
     // children[2] - lower left child
@@ -28,5 +28,19 @@ public class QTreeNode {
         this.lrlon = lrlon;
         this.img = img;
         this.imageName = imageName;
+    }
+
+    // Created compareTo to sort a list of QTreeNodes by upper left latitidue
+    @Override
+    public int compareTo(QTreeNode o) {
+        int cmp;
+        if (this.ullat > o.ullat) {
+            cmp = 1;
+        } else if (this.ullat < o.ullat) {
+            cmp = -1;
+        } else {
+            cmp = 0;
+        }
+        return cmp;
     }
 }
