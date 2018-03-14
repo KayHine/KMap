@@ -63,6 +63,7 @@ public class MapServer {
         "end_lat", "end_lon"};
     /* Define any static variables here. Do not define any instance variables of MapServer. */
     private static GraphDB g;
+    private QuadTree tree;
 
     /**
      * Place any initialization statements that will be run before the server main loop here.
@@ -203,241 +204,66 @@ public class MapServer {
      */
     public static Map<String, Object> getMapRaster(Map<String, Double> params, OutputStream os) {
         HashMap<String, Object> rasteredImageParams = new HashMap<>();
-        HashMap<Double, Integer> latitudes = new HashMap<>();
-        LinkedList<QTreeNode> rasters = new LinkedList<>();
-        QuadTree tree = new QuadTree();
-        BufferedImage rasterImage;
-        int treeHeight = 0;
-
-        double dpp = (params.get("lrlon") - params.get("ullon")) / params.get("w");
-
-        cleanParams(params);
-
-        double winUllon = params.get("ullon");
-        double winUllat = params.get("ullat");
-        double winLrlon = params.get("lrlon");
-        double winLrlat = params.get("lrlat");
-
-        double root_dpp = (ROOT_LRLON - ROOT_ULLON) / TILE_SIZE;
-
-        BufferedImage root_pic = null;
-        root_pic = makeImage("root");
-
-        tree.put(ROOT_ULLON, ROOT_ULLAT, ROOT_LRLON, ROOT_LRLAT, "root", root_pic);
-
-        double[] root_coord = {ROOT_ULLON, ROOT_ULLAT, ROOT_LRLON, ROOT_LRLAT};
-        double[] target_coord = {winUllon, winUllat, winLrlon, winLrlat};
-
-        // Recursively build the tree based on the viewing window
-        buildTree(root_coord, target_coord, dpp, root_dpp, "root", tree);
-        treeHeight = tree.getHeight();
-        tree.getLowestLevel(treeHeight, rasters, latitudes);
-
-        // Build the actual image now
-        Collections.sort(rasters, Collections.reverseOrder());
-        rasterImage = createRasterImage(rasters, latitudes);
-
-        try {
-            ImageIO.write(rasterImage, "png", os);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        // Build the rasteredImageParams map
-        rasteredImageParams.put("raster_ul_lon", rasters.getFirst().ullon);
-        rasteredImageParams.put("raster_ul_lat", rasters.getFirst().ullat);
-        rasteredImageParams.put("raster_lr_lon", rasters.getLast().lrlon);
-        rasteredImageParams.put("raster_lr_lat", rasters.getLast().lrlat);
-        rasteredImageParams.put("raster_width", rasterImage.getWidth());
-        rasteredImageParams.put("raster_height", rasterImage.getHeight());
-        rasteredImageParams.put("depth", rasters.getFirst().imageName.length());
-        if (rasterImage == null) {
-            rasteredImageParams.put("query_success", false);
-        } else {
-            rasteredImageParams.put("query_success", true);
-
-        }
-
 
         return rasteredImageParams;
     }
 
-    public static BufferedImage createRasterImage(LinkedList<QTreeNode> rasters,
-                                       HashMap<Double, Integer> latitudes) {
-        double lat = rasters.getFirst().ullat;
-        int width = latitudes.get(lat) * TILE_SIZE;
-        int height = latitudes.size() * TILE_SIZE;
-        int x = 0;
-        int y = 0;
-
-        BufferedImage os = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
-        Graphics g = os.getGraphics();
-        Iterator it = rasters.iterator();
-
-        while (it.hasNext()) {
-            if (x >= os.getWidth()) {
-                x = 0;
-                y += TILE_SIZE;
-            }
-
-            QTreeNode node = (QTreeNode) it.next();
-            g.drawImage(node.img, x, y, null);
-            x += TILE_SIZE;
-        }
-
-        return os;
+    public static void initializeTree(QuadTree tree) {
+        tree.addQTreeNode(ROOT_ULLON, ROOT_ULLAT, ROOT_LRLON, ROOT_LRLAT, "root", null);
+        double[] root_coord = {ROOT_ULLON, ROOT_ULLAT, ROOT_LRLON, ROOT_LRLAT};
+        treeBuilder(tree, root_coord, "root");
     }
 
-    /**
-     *
-     * @param node
-     * @param target
-     * @param dpp
-     * @param node_dpp
-     * @param imgName
-     * @param tree
-     */
-    public static void buildTree(double[] node,
-                                 double[] target,
-                                 double dpp,
-                                 double node_dpp,
-                                 String imgName,
-                                 QuadTree tree) {
-        // Base case
-        if (node_dpp < dpp) {
+    public static void treeBuilder(QuadTree tree, double[] coordinates, String filename) {
+        File image = new File(IMG_ROOT + filename + ".png");
+        if (!image.exists()) {
             return;
         }
 
-        double node_ullon, node_ullat, node_lrlon, node_lrlat;
+        String imgName = filename;
+        double lonMid = (coordinates[0] + coordinates[2]) / 2;
+        double latMid = (coordinates[1] + coordinates[3]) / 2;
 
-        node_ullon = node[0];
-        node_ullat = node[1];
-        node_lrlon = node[2];
-        node_lrlat = node[3];
+        double[] northWest = {coordinates[0], coordinates[1], lonMid, latMid};
+        double[] northEast = {lonMid, coordinates[1], coordinates[2], latMid};
+        double[] southWest = {coordinates[0], latMid, lonMid, coordinates[3]};
+        double[] southEast = {lonMid, latMid, coordinates[2], coordinates[3]};
 
-        double avg_lon = (node_ullon + node_lrlon) / 2;
-        double avg_lat = (node_ullat + node_lrlat) / 2;
 
-        double[] topLeftChild = {node_ullon, node_ullat, avg_lon, avg_lat + Math.pow(10, -9)};
-        double[] topRightChild = {avg_lon + Math.pow(10, -9), node_ullat, node_lrlon, avg_lat + + Math.pow(10, -9)};
-        double[] bottomLeftChild = {node_ullon, avg_lat, avg_lon, node_lrlat};
-        double[] bottomRightChild = {avg_lon + Math.pow(10, -9), avg_lat, node_lrlon, node_lrlat};
+        if (filename == "root") {
+            imgName = "1";
+            tree.addQTreeNode(northWest[0], northWest[1], northWest[2], northWest[3], imgName, null);
+            treeBuilder(tree, northWest, imgName);
 
-        node_dpp = (avg_lon - node_ullon) / TILE_SIZE;
-        String filename = imgName;
+            imgName = "2";
+            tree.addQTreeNode(northEast[0], northEast[1], northEast[2], northEast[3], imgName, null);
+            treeBuilder(tree, northEast, imgName);
 
-        if (isInBound(topLeftChild, target)) {
-            if (imgName == "root") {
-                filename = "1";
-            } else {
-                filename = filename + "1";
-            }
-            BufferedImage newImage = makeImage(filename);
-            tree.put(topLeftChild[0], topLeftChild[1], topLeftChild[2],
-                    topLeftChild[3], filename, newImage);
-            buildTree(topLeftChild, target, dpp, node_dpp, filename, tree);
+            imgName = "3";
+            tree.addQTreeNode(southWest[0], southWest[1], southWest[2], southWest[3], imgName, null);
+            treeBuilder(tree, southWest, imgName);
+
+            imgName = "4";
+            tree.addQTreeNode(southEast[0], southEast[1], southEast[2], southEast[3], imgName, null);
+            treeBuilder(tree, southEast, imgName);
         }
+        else {
+            imgName = imgName + "1";
+            tree.addQTreeNode(northWest[0], northWest[1], northWest[2], northWest[3], imgName, null);
+            treeBuilder(tree, northWest, imgName);
 
-        filename = imgName;
-        if (isInBound(topRightChild, target)) {
-            if (imgName == "root") {
-                filename = "2";
-            } else {
-                filename = filename + "2";
-            }
-            BufferedImage newImage = makeImage(filename);
-            tree.put(topRightChild[0], topRightChild[1], topRightChild[2],
-                    topRightChild[3], filename, newImage);
-            buildTree(topRightChild, target, dpp, node_dpp, filename, tree);
-        }
+            imgName = imgName + "2";
+            tree.addQTreeNode(northEast[0], northEast[1], northEast[2], northEast[3], imgName, null);
+            treeBuilder(tree, northEast, imgName);
 
-        filename = imgName;
-        if (isInBound(bottomLeftChild, target)) {
-            if (imgName == "root") {
-                filename = "3";
-            } else {
-                filename = filename + "3";
-            }
-            BufferedImage newImage = makeImage(filename);
-            tree.put(bottomLeftChild[0], bottomLeftChild[1], bottomLeftChild[2],
-                    bottomLeftChild[3], filename, newImage);
-            buildTree(bottomLeftChild, target, dpp, node_dpp, filename, tree);
-        }
+            imgName = imgName + "3";
+            tree.addQTreeNode(southWest[0], southWest[1], southWest[2], southWest[3], imgName, null);
+            treeBuilder(tree, southWest, imgName);
 
-        filename = imgName;
-        if (isInBound(bottomRightChild, target)) {
-            if (imgName == "root") {
-                filename = "4";
-            } else {
-                filename = filename + "4";
-            }
-            BufferedImage newImage = makeImage(filename);
-            tree.put(bottomRightChild[0], bottomRightChild[1], bottomRightChild[2],
-                    bottomRightChild[3], filename, newImage);
-            buildTree(bottomRightChild, target, dpp, node_dpp, filename, tree);
+            imgName = imgName + "4";
+            tree.addQTreeNode(southEast[0], southEast[1], southEast[2], southEast[3], imgName, null);
+            treeBuilder(tree, southEast, imgName);
         }
-    }
-
-    /**
-     *
-     * @param node
-     * @param target
-     * @return
-     */
-    public static boolean isInBound(double[] node, double[] target) {
-        // If one rectangle is on the left side of the other
-        if (node[0] > target[2] || target[0] > node[2]) {
-            return false;
-        }
-
-        // If one rectangle is above the other
-        if (node[1] < target[3] || target[1] < node[3]) {
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
-     *
-     * @param imgName
-     * @return
-     */
-    public static BufferedImage makeImage(String imgName) {
-        BufferedImage img = null;
-        try {
-            img = ImageIO.read(new File(IMG_ROOT + imgName + ".png"));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return img;
-    }
-
-    /**
-     *
-     * @param params
-     */
-    public static void cleanParams(Map<String, Double> params) {
-        double winUllon = params.get("ullon");
-        double winUllat = params.get("ullat");
-        double winLrlon = params.get("lrlon");
-        double winLrlat = params.get("lrlat");
-        if (winUllon < ROOT_ULLON) {
-            winUllon = ROOT_ULLON;
-        }
-        if (winUllat > ROOT_ULLAT) {
-            winUllat = ROOT_ULLAT;
-        }
-        if (winLrlon > ROOT_LRLON) {
-            winLrlon = ROOT_LRLON;
-        }
-        if (winLrlat < ROOT_LRLAT) {
-            winLrlat = ROOT_LRLAT;
-        }
-        params.put("ullon", winUllon);
-        params.put("ullat", winUllat);
-        params.put("lrlon", winLrlon);
-        params.put("lrlat", winLrlat);
     }
 
     /**
