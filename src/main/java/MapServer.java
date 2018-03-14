@@ -217,10 +217,8 @@ public class MapServer {
     }
 
     public static void treeBuilder(QuadTree tree, double[] coordinates, String filename) {
-        File image = new File(IMG_ROOT + filename + ".png");
-        if (!image.exists()) {
-            return;
-        }
+
+        if (!isValidFile(filename)) return;
 
         String imgName = filename;
         double lonMid = (coordinates[0] + coordinates[2]) / 2;
@@ -269,6 +267,11 @@ public class MapServer {
             tree.addQTreeNode(southEast[0], southEast[1], southEast[2], southEast[3], imgName);
             treeBuilder(tree, southEast, imgName);
         }
+    }
+
+    public static boolean isValidFile(String filename) {
+        File image = new File("img_sub/" + filename + ".png");
+        return image.exists();
     }
 
     /**

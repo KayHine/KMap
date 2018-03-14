@@ -19,24 +19,23 @@ public class QuadTree
         }
 
         double latMid = (node.lrlat + node.ullat) / 2;
+        double lonMid = (node.lrlon + node.ullon) / 2;
 
-        // Indicates top half
-        if (ullat > latMid) {
-            if (ullon == node.ullon && ullat == node.ullat) {
-                node.northWest = addQTreeNode(node.northWest, ullon, ullat, lrlon, lrlat, imgName);
-            }
-            else {
-                node.northEast = addQTreeNode(node.northEast, ullon, ullat, lrlon, lrlat, imgName);
-            }
+        if (ullon >= node.ullon && ullat <= node.ullat &&
+                lrlon <= lonMid && lrlat >= latMid) {
+            node.northWest = addQTreeNode(node.northWest, ullon, ullat, lrlon, lrlat, imgName);
         }
-        // Indicates bottom half
-        else {
-            if (lrlon == node.lrlon && lrlat == node.lrlat) {
-                node.southEast = addQTreeNode(node.southEast, ullon, ullat, lrlon, lrlat, imgName);
-            }
-            else {
-                node.southWest = addQTreeNode(node.southWest, ullon, ullat, lrlon, lrlat, imgName);
-            }
+        else if (ullon >= lonMid && ullat <= node.ullat &&
+                lrlon <= node.lrlon && lrlat >= latMid) {
+            node.northEast = addQTreeNode(node.northEast, ullon, ullat, lrlon, lrlat, imgName);
+        }
+        else if (ullon >= node.ullon && ullat <= latMid &&
+                lrlon <= lonMid && lrlat >= node.lrlat) {
+            node.southEast = addQTreeNode(node.southEast, ullon, ullat, lrlon, lrlat, imgName);
+        }
+        else if (ullon >= lonMid && ullat <= latMid &&
+                lrlon <= node.lrlon && lrlat >= node.lrlat) {
+            node.southWest = addQTreeNode(node.southWest, ullon, ullat, lrlon, lrlat, imgName);
         }
 
         return node;
