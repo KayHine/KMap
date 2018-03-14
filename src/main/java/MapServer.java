@@ -63,7 +63,7 @@ public class MapServer {
         "end_lat", "end_lon"};
     /* Define any static variables here. Do not define any instance variables of MapServer. */
     private static GraphDB g;
-    private QuadTree tree;
+    private static QuadTree tree;
 
     /**
      * Place any initialization statements that will be run before the server main loop here.
@@ -72,6 +72,8 @@ public class MapServer {
      **/
     public static void initialize() {
         g = new GraphDB(OSM_DB_PATH);
+        tree = new QuadTree();
+        initializeTree(tree);
     }
 
     public static void main(String[] args) {
@@ -209,7 +211,7 @@ public class MapServer {
     }
 
     public static void initializeTree(QuadTree tree) {
-        tree.addQTreeNode(ROOT_ULLON, ROOT_ULLAT, ROOT_LRLON, ROOT_LRLAT, "root", null);
+        tree.addQTreeNode(ROOT_ULLON, ROOT_ULLAT, ROOT_LRLON, ROOT_LRLAT, "root");
         double[] root_coord = {ROOT_ULLON, ROOT_ULLAT, ROOT_LRLON, ROOT_LRLAT};
         treeBuilder(tree, root_coord, "root");
     }
@@ -232,36 +234,39 @@ public class MapServer {
 
         if (filename == "root") {
             imgName = "1";
-            tree.addQTreeNode(northWest[0], northWest[1], northWest[2], northWest[3], imgName, null);
-            treeBuilder(tree, northWest, imgName);
+            tree.addQTreeNode(northWest[0], northWest[1], northWest[2], northWest[3], imgName);
+            //treeBuilder(tree, northWest, imgName);
 
             imgName = "2";
-            tree.addQTreeNode(northEast[0], northEast[1], northEast[2], northEast[3], imgName, null);
-            treeBuilder(tree, northEast, imgName);
+            tree.addQTreeNode(northEast[0], northEast[1], northEast[2], northEast[3], imgName);
+            //treeBuilder(tree, northEast, imgName);
 
             imgName = "3";
-            tree.addQTreeNode(southWest[0], southWest[1], southWest[2], southWest[3], imgName, null);
-            treeBuilder(tree, southWest, imgName);
+            tree.addQTreeNode(southWest[0], southWest[1], southWest[2], southWest[3], imgName);
+            //treeBuilder(tree, southWest, imgName);
 
             imgName = "4";
-            tree.addQTreeNode(southEast[0], southEast[1], southEast[2], southEast[3], imgName, null);
-            treeBuilder(tree, southEast, imgName);
+            tree.addQTreeNode(southEast[0], southEast[1], southEast[2], southEast[3], imgName);
+            //treeBuilder(tree, southEast, imgName);
         }
         else {
             imgName = imgName + "1";
-            tree.addQTreeNode(northWest[0], northWest[1], northWest[2], northWest[3], imgName, null);
+            tree.addQTreeNode(northWest[0], northWest[1], northWest[2], northWest[3], imgName);
             treeBuilder(tree, northWest, imgName);
 
+            imgName = filename;
             imgName = imgName + "2";
-            tree.addQTreeNode(northEast[0], northEast[1], northEast[2], northEast[3], imgName, null);
+            tree.addQTreeNode(northEast[0], northEast[1], northEast[2], northEast[3], imgName);
             treeBuilder(tree, northEast, imgName);
 
+            imgName = filename;
             imgName = imgName + "3";
-            tree.addQTreeNode(southWest[0], southWest[1], southWest[2], southWest[3], imgName, null);
+            tree.addQTreeNode(southWest[0], southWest[1], southWest[2], southWest[3], imgName);
             treeBuilder(tree, southWest, imgName);
 
+            imgName = filename;
             imgName = imgName + "4";
-            tree.addQTreeNode(southEast[0], southEast[1], southEast[2], southEast[3], imgName, null);
+            tree.addQTreeNode(southEast[0], southEast[1], southEast[2], southEast[3], imgName);
             treeBuilder(tree, southEast, imgName);
         }
     }

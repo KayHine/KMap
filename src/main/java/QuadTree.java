@@ -6,16 +6,16 @@ public class QuadTree
     private QTreeNode root;
 
     public void addQTreeNode(double ullon, double ullat,
-                      double lrlon, double lrlat, String imgName, BufferedImage img) {
+                      double lrlon, double lrlat, String imgName) {
 
-        root = addQTreeNode(root, ullon, ullat, lrlon, lrlat, imgName, img);
+        root = addQTreeNode(root, ullon, ullat, lrlon, lrlat, imgName);
     }
 
     public QTreeNode addQTreeNode(QTreeNode node, double ullon, double ullat,
-                      double lrlon, double lrlat, String imgName, BufferedImage img) {
+                      double lrlon, double lrlat, String imgName) {
 
         if (node == null) {
-            return new QTreeNode(ullon, ullat, lrlon, lrlat, imgName, img);
+            return new QTreeNode(ullon, ullat, lrlon, lrlat, imgName);
         }
 
         double latMid = (node.lrlat + node.ullat) / 2;
@@ -23,19 +23,19 @@ public class QuadTree
         // Indicates top half
         if (ullat > latMid) {
             if (ullon == node.ullon && ullat == node.ullat) {
-                addQTreeNode(node.northWest, ullon, ullat, lrlon, lrlat, imgName, img);
+                node.northWest = addQTreeNode(node.northWest, ullon, ullat, lrlon, lrlat, imgName);
             }
             else {
-                addQTreeNode(node.northEast, ullon, ullat, lrlon, lrlat, imgName, img);
+                node.northEast = addQTreeNode(node.northEast, ullon, ullat, lrlon, lrlat, imgName);
             }
         }
         // Indicates bottom half
         else {
             if (lrlon == node.lrlon && lrlat == node.lrlat) {
-                addQTreeNode(node.southWest, ullon, ullat, lrlon, lrlat, imgName, img);
+                node.southEast = addQTreeNode(node.southEast, ullon, ullat, lrlon, lrlat, imgName);
             }
             else {
-                addQTreeNode(node.southEast, ullon, ullat, lrlon, lrlat, imgName, img);
+                node.southWest = addQTreeNode(node.southWest, ullon, ullat, lrlon, lrlat, imgName);
             }
         }
 
