@@ -2,15 +2,15 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.IOException;
 import java.io.OutputStream;
 import java.util.*;
 import java.util.List;
 
 /* Maven is used to pull in these dependencies. */
 import com.google.gson.Gson;
+import sun.awt.image.ImageWatched;
 
-import javax.imageio.ImageIO;
+import javax.swing.tree.TreeNode;
 
 import static spark.Spark.*;
 
@@ -77,7 +77,12 @@ public class MapServer {
     }
 
     public static void main(String[] args) {
+        long startTime = System.nanoTime();
         initialize();
+        long endTime = System.nanoTime();
+        long duration = (endTime - startTime) / 1000000;
+        System.out.print("Duration: " + duration + " ms");
+
         staticFileLocation("/page");
         /* Allow for all origin requests (since this is not an authenticated server, we do not
          * care about CSRF).  */
@@ -206,24 +211,62 @@ public class MapServer {
      */
     public static Map<String, Object> getMapRaster(Map<String, Double> params, OutputStream os) {
         HashMap<String, Object> rasteredImageParams = new HashMap<>();
+        LinkedList<QTreeNode> rastersNodes = new LinkedList<>();
+        BufferedImage rasterImage;
+
+        double dpp = (params.get("lrlon") - params.get("ullon")) / params.get("w");
+
+        double winUllon = params.get("ullon");
+        double winUllat = params.get("ullat");
+        double winLrlon = params.get("lrlon");
+        double winLrlat = params.get("lrlat");
+        double[] viewBox = {winUllon, winUllat, winLrlon, winLrlat};
+
+        rastersNodes = (LinkedList<QTreeNode>) tree.gatherNodesInRange(dpp, viewBox);
+        rasterImage = buildRasterImage(rastersNodes);
 
         return rasteredImageParams;
     }
 
+    public static BufferedImage buildRasterImage(Iterable<QTreeNode> rasterNodes) {
+        BufferedImage rasteredImage;
+
+        return rasteredImage;
+    }
+
+    /**
+     * Initializing function that createst the entire QuadTree with all images
+     * @param tree - takes the private static QuadTree variable in the MapServer class
+     */
     public static void initializeTree(QuadTree tree) {
+        // Add the initial root node
         tree.addQTreeNode(ROOT_ULLON, ROOT_ULLAT, ROOT_LRLON, ROOT_LRLAT, "root");
         double[] root_coord = {ROOT_ULLON, ROOT_ULLAT, ROOT_LRLON, ROOT_LRLAT};
         treeBuilder(tree, root_coord, "root");
     }
 
+    /**
+     * Helper function that recursively builds the entire QuadTree.
+     * 1. Check if the png exists in /img/ folder
+     * 2. Split incoming coordinates[] of node into four quadrants
+     * 3. Build the image file name based on if the previous name is root or not
+     * 4. Build the entire level of each quadrant
+     * 5. Recursively build each quadrant
+     * @param tree - takes the private static QuadTree variable in the MapServer class
+     * @param coordinates - the coordinates of the root node
+     * @param filename - name of the file that we'll ultimately use to load the png file
+     */
     public static void treeBuilder(QuadTree tree, double[] coordinates, String filename) {
 
-        if (!isValidFile(filename)) return;
+        if (!isValidFile(filename))
+            return;
 
-        String imgName = filename;
+        String imgName1, imgName2, imgName3, imgName4;
+        imgName1 = imgName2 = imgName3 = imgName4 = filename;
         double lonMid = (coordinates[0] + coordinates[2]) / 2;
         double latMid = (coordinates[1] + coordinates[3]) / 2;
 
+        // Split the current node into four quadrants
         double[] northWest = {coordinates[0], coordinates[1], lonMid, latMid};
         double[] northEast = {lonMid, coordinates[1], coordinates[2], latMid};
         double[] southWest = {coordinates[0], latMid, lonMid, coordinates[3]};
@@ -231,46 +274,55 @@ public class MapServer {
 
 
         if (filename == "root") {
-            imgName = "1";
-            tree.addQTreeNode(northWest[0], northWest[1], northWest[2], northWest[3], imgName);
-            //treeBuilder(tree, northWest, imgName);
+            imgName1 = "1";
+            tree.addQTreeNode(northWest[0], northWest[1], northWest[2], northWest[3], imgName1);
+            treeBuilder(tree, northWest, imgName1);
 
-            imgName = "2";
-            tree.addQTreeNode(northEast[0], northEast[1], northEast[2], northEast[3], imgName);
-            //treeBuilder(tree, northEast, imgName);
+            imgName2 = "2";
+            tree.addQTreeNode(northEast[0], northEast[1], northEast[2], northEast[3], imgName2);
+            treeBuilder(tree, northEast, imgName2);
 
-            imgName = "3";
-            tree.addQTreeNode(southWest[0], southWest[1], southWest[2], southWest[3], imgName);
-            //treeBuilder(tree, southWest, imgName);
+            imgName3 = "3";
+            tree.addQTreeNode(southWest[0], southWest[1], southWest[2], southWest[3], imgName3);
+            treeBuilder(tree, southWest, imgName3);
 
-            imgName = "4";
-            tree.addQTreeNode(southEast[0], southEast[1], southEast[2], southEast[3], imgName);
-            //treeBuilder(tree, southEast, imgName);
+            imgName4 = "4";
+            tree.addQTreeNode(southEast[0], southEast[1], southEast[2], southEast[3], imgName4);
+            treeBuilder(tree, southEast, imgName4);
         }
         else {
-            imgName = imgName + "1";
-            tree.addQTreeNode(northWest[0], northWest[1], northWest[2], northWest[3], imgName);
-            treeBuilder(tree, northWest, imgName);
+            imgName1 = imgName1 + "1";
+            if (isValidFile(imgName1)) {
+                tree.addQTreeNode(northWest[0], northWest[1], northWest[2], northWest[3], imgName1);
+            }
 
-            imgName = filename;
-            imgName = imgName + "2";
-            tree.addQTreeNode(northEast[0], northEast[1], northEast[2], northEast[3], imgName);
-            treeBuilder(tree, northEast, imgName);
+            imgName2 = filename;
+            imgName2 = imgName2 + "2";
+            if (isValidFile(imgName2)) {
+                tree.addQTreeNode(northEast[0], northEast[1], northEast[2], northEast[3], imgName2);
+            }
 
-            imgName = filename;
-            imgName = imgName + "3";
-            tree.addQTreeNode(southWest[0], southWest[1], southWest[2], southWest[3], imgName);
-            treeBuilder(tree, southWest, imgName);
+            imgName3 = filename;
+            imgName3 = imgName3 + "3";
+            if (isValidFile(imgName3)) {
+                tree.addQTreeNode(southWest[0], southWest[1], southWest[2], southWest[3], imgName3);
+            }
 
-            imgName = filename;
-            imgName = imgName + "4";
-            tree.addQTreeNode(southEast[0], southEast[1], southEast[2], southEast[3], imgName);
-            treeBuilder(tree, southEast, imgName);
+            imgName4 = filename;
+            imgName4 = imgName4 + "4";
+            if (isValidFile(imgName4)) {
+                tree.addQTreeNode(southEast[0], southEast[1], southEast[2], southEast[3], imgName4);
+            }
+
+            treeBuilder(tree, northWest, imgName1);
+            treeBuilder(tree, northEast, imgName2);
+            treeBuilder(tree, southWest, imgName3);
+            treeBuilder(tree, southEast, imgName4);
         }
     }
 
     public static boolean isValidFile(String filename) {
-        File image = new File("img_sub/" + filename + ".png");
+        File image = new File(IMG_ROOT + filename + ".png");
         return image.exists();
     }
 

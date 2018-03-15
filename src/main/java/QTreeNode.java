@@ -1,6 +1,5 @@
-import java.awt.image.BufferedImage;
+public class QTreeNode{
 
-public class QTreeNode {
     public QTreeNode northWest;
     public QTreeNode northEast;
     public QTreeNode southWest;
@@ -14,5 +13,10 @@ public class QTreeNode {
         this.lrlon = lrlon;
         this.lrlat = lrlat;
         this.imageName = imageName;
+    }
+
+    public double[] getCoords() {
+        double[] coords = {ullon, ullat, lrlon, lrlat};
+        return coords;
     }
 }
