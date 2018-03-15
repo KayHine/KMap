@@ -2,14 +2,15 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.IOException;
 import java.io.OutputStream;
 import java.util.*;
 import java.util.List;
 
 /* Maven is used to pull in these dependencies. */
 import com.google.gson.Gson;
-import sun.awt.image.ImageWatched;
 
+import javax.imageio.ImageIO;
 import javax.swing.tree.TreeNode;
 
 import static spark.Spark.*;
@@ -81,7 +82,7 @@ public class MapServer {
         initialize();
         long endTime = System.nanoTime();
         long duration = (endTime - startTime) / 1000000;
-        System.out.print("Duration: " + duration + " ms");
+        System.out.println("Tree Build Duration: " + duration + " ms");
 
         staticFileLocation("/page");
         /* Allow for all origin requests (since this is not an authenticated server, we do not
@@ -213,6 +214,7 @@ public class MapServer {
         HashMap<String, Object> rasteredImageParams = new HashMap<>();
         LinkedList<QTreeNode> rastersNodes = new LinkedList<>();
         BufferedImage rasterImage;
+        boolean query_success = true;
 
         double dpp = (params.get("lrlon") - params.get("ullon")) / params.get("w");
 
@@ -223,13 +225,65 @@ public class MapServer {
         double[] viewBox = {winUllon, winUllat, winLrlon, winLrlat};
 
         rastersNodes = (LinkedList<QTreeNode>) tree.gatherNodesInRange(dpp, viewBox);
-        rasterImage = buildRasterImage(rastersNodes);
+        // Get rasterNodes in reverse order (largest -> smallest) latitude value
+        // so we can render the image from the top down
+        Collections.sort(rastersNodes, Collections.reverseOrder());
+        rasterImage = buildRasterImage(rastersNodes, query_success);
+
+        try {
+            ImageIO.write(rasterImage, "png", os);
+        } catch (IOException e) {
+            query_success = false;
+            e.printStackTrace();
+        }
+
+        // Build the rasteredImageParams map
+        rasteredImageParams.put("raster_ul_lon", rastersNodes.getFirst().ullon);
+        rasteredImageParams.put("raster_ul_lat", rastersNodes.getFirst().ullat);
+        rasteredImageParams.put("raster_lr_lon", rastersNodes.getLast().lrlon);
+        rasteredImageParams.put("raster_lr_lat", rastersNodes.getLast().lrlat);
+        rasteredImageParams.put("raster_width", rasterImage.getWidth());
+        rasteredImageParams.put("raster_height", rasterImage.getHeight());
+        rasteredImageParams.put("depth", rastersNodes.getFirst().imageName.length());
+        rasteredImageParams.put("query_success", query_success);
 
         return rasteredImageParams;
     }
 
-    public static BufferedImage buildRasterImage(Iterable<QTreeNode> rasterNodes) {
-        BufferedImage rasteredImage;
+    public static BufferedImage buildRasterImage(Iterable<QTreeNode> rasterNodes, boolean query_success) {
+        BufferedImage rasteredImage = null;
+        HashSet<Double> latitudes = new HashSet<>();
+
+        // Find the number of unique latitudes in the set of rasterNodes to determine the height of the image
+        for (QTreeNode node : rasterNodes) {
+            latitudes.add(node.ullat);
+        }
+
+        int x = 0;
+        int y = 0;
+        int height = latitudes.size();
+        int width = ((LinkedList<QTreeNode>) rasterNodes).size() / height;
+
+        rasteredImage = new BufferedImage(width * TILE_SIZE, height * TILE_SIZE, BufferedImage.TYPE_INT_RGB);
+        Graphics g = rasteredImage.getGraphics();
+
+        for (QTreeNode node : rasterNodes) {
+            BufferedImage tile = null;
+            if (x >= rasteredImage.getWidth()) {
+                x = 0;
+                y += TILE_SIZE;
+            }
+
+            try {
+                tile = ImageIO.read(new File(IMG_ROOT + node.imageName + ".png"));
+            } catch (IOException e) {
+                query_success = false;
+                e.printStackTrace();
+            }
+
+            g.drawImage(tile, x, y, null);
+            x += TILE_SIZE;
+        }
 
         return rasteredImage;
     }

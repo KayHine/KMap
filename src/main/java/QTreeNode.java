@@ -1,4 +1,4 @@
-public class QTreeNode{
+public class QTreeNode implements Comparable<QTreeNode> {
 
     public QTreeNode northWest;
     public QTreeNode northEast;
@@ -18,5 +18,18 @@ public class QTreeNode{
     public double[] getCoords() {
         double[] coords = {ullon, ullat, lrlon, lrlat};
         return coords;
+    }
+
+    @Override
+    public int compareTo(QTreeNode o) {
+        if (this.ullat < o.ullat) {
+            return -1;
+        }
+        else if (this.ullat > o.ullat) {
+            return 1;
+        }
+        else {
+            return 0;
+        }
     }
 }

@@ -52,7 +52,7 @@ public class QuadTree
     public void gatherNodesInRangeHelper(QTreeNode node, double dpp, double node_dpp,
                                          double[] viewBox, Iterable<QTreeNode> rasters) {
 
-        if (node_dpp <= dpp || node.northWest == null)
+        if (node_dpp <= dpp || node.northEast == null)
             return;
 
         node_dpp = (node.northEast.lrlon - node.northEast.ullon) / 256;
@@ -61,26 +61,28 @@ public class QuadTree
         double[] southWest = node.southWest.getCoords();
         double[] southEast = node.southEast.getCoords();
 
+        // Need to take into account if this is the last node in the tree
+        // Check two nodes down from current
         if (viewBoxInBound(viewBox, northWest)) {
-            if (node_dpp <= dpp) {
+            if (node_dpp <= dpp || node.northWest.northWest == null) {
                 ((LinkedList<QTreeNode>) rasters).add(node.northWest);
             }
             gatherNodesInRangeHelper(node.northWest, dpp, node_dpp, viewBox, rasters);
         }
         if (viewBoxInBound(viewBox, northEast)) {
-            if (node_dpp <= dpp) {
+            if (node_dpp <= dpp || node.northEast.northEast == null) {
                 ((LinkedList<QTreeNode>) rasters).add(node.northEast);
             }
             gatherNodesInRangeHelper(node.northEast, dpp, node_dpp, viewBox, rasters);
         }
         if (viewBoxInBound(viewBox, southWest)) {
-            if (node_dpp <= dpp) {
+            if (node_dpp <= dpp || node.southWest.southWest == null) {
                 ((LinkedList<QTreeNode>) rasters).add(node.southWest);
             }
             gatherNodesInRangeHelper(node.southWest, dpp, node_dpp, viewBox, rasters);
         }
         if (viewBoxInBound(viewBox, southEast)) {
-            if (node_dpp <= dpp) {
+            if (node_dpp <= dpp || node.southEast.southEast == null) {
                 ((LinkedList<QTreeNode>) rasters).add(node.southEast);
             }
             gatherNodesInRangeHelper(node.southEast, dpp, node_dpp, viewBox, rasters);
