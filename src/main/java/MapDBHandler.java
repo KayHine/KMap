@@ -2,10 +2,7 @@ import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 /**
  *  Parses OSM XML files using an XML SAX parser. Used to construct the graph of roads for
@@ -31,12 +28,14 @@ public class MapDBHandler extends DefaultHandler {
                     "secondary_link", "tertiary_link"));
     private String activeState = "";
     private Node currentNode;
-    private ArrayList<String> wayNodes;
+    private ArrayList<Long> wayNodes;
     private final GraphDB g;
+    private HashMap<Long, Node> idMap;
 
     public MapDBHandler(GraphDB g) {
         this.g = g;
         wayNodes = new ArrayList<>();
+        idMap = new HashMap<>();
     }
 
     /**
@@ -59,17 +58,18 @@ public class MapDBHandler extends DefaultHandler {
         /* Some example code on how you might begin to parse XML files. */
         if (qName.equals("node")) {
             activeState = "node";
-            int id = Integer.parseInt(attributes.getValue("id"));
+            long id = Long.parseLong(attributes.getValue("id"));
             double lat = Double.parseDouble(attributes.getValue("lat"));
             double lon = Double.parseDouble(attributes.getValue("lon"));
             Node node = new Node(id, lat, lon);
             currentNode = node;
             g.putNode(node);
+            idMap.put(id, node);
         } else if (qName.equals("way")) {
             activeState = "way";
-            System.out.println("Beginning a way...");
+//            System.out.println("Beginning a way...");
         } else if (activeState.equals("way") && qName.equals("nd")) {
-            String ref = attributes.getValue("ref");
+            Long ref = Long.parseLong(attributes.getValue("ref"));
             wayNodes.add(ref);
         } else if (activeState.equals("node") && qName.equals("tag") && attributes.getValue("k")
                 .equals("name")) {
@@ -90,11 +90,16 @@ public class MapDBHandler extends DefaultHandler {
      */
     @Override
     public void endElement(String uri, String localName, String qName) throws SAXException {
-//        if (qName.equals("way")) {
-//            for (int i = 0; i < wayNodes.size() - 1; i++) {
-//
-//            }
-//        }
+        if (qName.equals("way")) {
+            for (int i = 0; i < wayNodes.size() - 1; i++) {
+                Node source = idMap.get(wayNodes.get(i));
+                Node dest = idMap.get(wayNodes.get(i + 1));
+                g.addEdge(source, dest);
+            }
+            wayNodes.clear();
+        }
     }
+
+    // TODO: Do i need to clear out idMap???
 
 }

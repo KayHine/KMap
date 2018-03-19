@@ -1,11 +1,11 @@
-public class Node {
+public class Node implements Comparable<Node> {
 
-    public int id;
+    public long id;
     public double latitude;
     public double longitude;
     public String name;
 
-    public Node(int id, double lat, double lon) {
+    public Node(long id, double lat, double lon) {
         this.id = id;
         this.latitude = lat;
         this.longitude = lon;
@@ -17,7 +17,7 @@ public class Node {
 
     @Override
     public int hashCode() {
-        return Integer.hashCode(id);
+        return Long.hashCode(id);
     }
 
     @Override
@@ -40,4 +40,16 @@ public class Node {
         return false;
     }
 
+    @Override
+    public int compareTo(Node o) {
+        if (this.longitude < o.longitude) {
+            return -1;
+        }
+        else if (this.longitude > o.longitude) {
+            return 1;
+        }
+        else {
+            return 0;
+        }
+    }
 }

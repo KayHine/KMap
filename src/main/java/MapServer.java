@@ -9,10 +9,7 @@ import java.util.List;
 
 /* Maven is used to pull in these dependencies. */
 import com.google.gson.Gson;
-
 import javax.imageio.ImageIO;
-import javax.swing.tree.TreeNode;
-
 import static spark.Spark.*;
 
 /**
@@ -72,18 +69,23 @@ public class MapServer {
      * This is for testing purposes, and you may fail tests otherwise.
      **/
     public static void initialize() {
+        long startTime = System.nanoTime();
         g = new GraphDB(OSM_DB_PATH);
+        long endTime = System.nanoTime();
+        long duration = (endTime - startTime) / 1000000;
+        System.out.println("Graph Build Duration: " + duration + " ms");
+
         tree = new QuadTree();
+
+        startTime = System.nanoTime();
         initializeTree(tree);
+        endTime = System.nanoTime();
+        duration = (endTime - startTime) / 1000000;
+        System.out.println("Tree Build Duration: " + duration + " ms");
     }
 
     public static void main(String[] args) {
-        long startTime = System.nanoTime();
         initialize();
-        long endTime = System.nanoTime();
-        long duration = (endTime - startTime) / 1000000;
-        System.out.println("Tree Build Duration: " + duration + " ms");
-
         staticFileLocation("/page");
         /* Allow for all origin requests (since this is not an authenticated server, we do not
          * care about CSRF).  */
