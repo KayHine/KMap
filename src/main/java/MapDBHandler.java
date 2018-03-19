@@ -2,6 +2,7 @@ import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -29,10 +30,13 @@ public class MapDBHandler extends DefaultHandler {
                     "residential", "living_street", "motorway_link", "trunk_link", "primary_link",
                     "secondary_link", "tertiary_link"));
     private String activeState = "";
+    private Node currentNode;
+    private ArrayList<String> wayNodes;
     private final GraphDB g;
 
     public MapDBHandler(GraphDB g) {
         this.g = g;
+        wayNodes = new ArrayList<>();
     }
 
     /**
@@ -55,16 +59,21 @@ public class MapDBHandler extends DefaultHandler {
         /* Some example code on how you might begin to parse XML files. */
         if (qName.equals("node")) {
             activeState = "node";
+            int id = Integer.parseInt(attributes.getValue("id"));
+            double lat = Double.parseDouble(attributes.getValue("lat"));
+            double lon = Double.parseDouble(attributes.getValue("lon"));
+            Node node = new Node(id, lat, lon);
+            currentNode = node;
+            g.putNode(node);
         } else if (qName.equals("way")) {
             activeState = "way";
-//            System.out.println("Beginning a way...");
-        } else if (activeState.equals("way") && qName.equals("tag")) {
-            String k = attributes.getValue("k");
-            String v = attributes.getValue("v");
-//            System.out.println("Tag with k=" + k + ", v=" + v + ".");
+            System.out.println("Beginning a way...");
+        } else if (activeState.equals("way") && qName.equals("nd")) {
+            String ref = attributes.getValue("ref");
+            wayNodes.add(ref);
         } else if (activeState.equals("node") && qName.equals("tag") && attributes.getValue("k")
                 .equals("name")) {
-//            System.out.println("Node with name: " + attributes.getValue("v"));
+            currentNode.setName(attributes.getValue("k"));
         }
     }
 
@@ -81,9 +90,11 @@ public class MapDBHandler extends DefaultHandler {
      */
     @Override
     public void endElement(String uri, String localName, String qName) throws SAXException {
-        if (qName.equals("way")) {
-//            System.out.println("Finishing a way...");
-        }
+//        if (qName.equals("way")) {
+//            for (int i = 0; i < wayNodes.size() - 1; i++) {
+//
+//            }
+//        }
     }
 
 }

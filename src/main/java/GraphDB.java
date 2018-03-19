@@ -2,6 +2,10 @@ import org.xml.sax.SAXException;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Comparator;
+import java.util.SortedSet;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
@@ -12,11 +16,29 @@ import javax.xml.parsers.SAXParserFactory;
  * @author Alan Yao
  */
 public class GraphDB {
+
+    private TreeMap<Node, SortedSet<Node>> mapGraph;
+
     /**
      * Example constructor shows how to create and start an XML parser.
      * @param db_path Path to the XML file to be parsed.
      */
     public GraphDB(String db_path) {
+        mapGraph = new TreeMap<>(new Comparator<Node>() {
+            @Override
+            public int compare(Node node, Node t1) {
+                if (node.longitude < t1.longitude) {
+                    return -1;
+                }
+                else if (node.longitude > t1.longitude) {
+                    return 1;
+                }
+                else {
+                    return 0;
+                }
+            }
+        });
+
         try {
             File inputFile = new File(db_path);
             SAXParserFactory factory = SAXParserFactory.newInstance();
@@ -27,6 +49,38 @@ public class GraphDB {
             e.printStackTrace();
         }
         clean();
+    }
+
+    public void putNode(Node node) {
+        if (!mapGraph.containsKey(node)) {
+            mapGraph.put(node, new TreeSet<>(new Comparator<Node>() {
+                @Override
+                public int compare(Node node, Node t1) {
+                    if (node.latitude < t1.latitude) {
+                        return -1;
+                    }
+                    else if (node.latitude > t1.latitude) {
+                        return 1;
+                    }
+                    else {
+                        return 0;
+                    }
+                }
+            }));
+        }
+    }
+
+    public void addEdge(Node source, Node dest) {
+        if (!mapGraph.containsKey(source)) {
+            putNode(source);
+        }
+        else if (!mapGraph.containsKey(dest)) {
+            putNode(dest);
+        }
+
+        // Add adjacent nodes to each source and dest because this is undirected
+        mapGraph.get(source).add(dest);
+        mapGraph.get(dest).add(source);
     }
 
     /**
