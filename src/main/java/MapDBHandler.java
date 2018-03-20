@@ -65,15 +65,27 @@ public class MapDBHandler extends DefaultHandler {
             currentNode = node;
             g.putNode(node);
             idMap.put(id, node);
-        } else if (qName.equals("way")) {
+        }
+        else if (qName.equals("way")) {
             activeState = "way";
-//            System.out.println("Beginning a way...");
-        } else if (activeState.equals("way") && qName.equals("nd")) {
+        }
+        // Collect a list of related nodes in each Way
+        else if (activeState.equals("way") && qName.equals("nd")) {
             Long ref = Long.parseLong(attributes.getValue("ref"));
             wayNodes.add(ref);
-        } else if (activeState.equals("node") && qName.equals("tag") && attributes.getValue("k")
+        }
+        // Mark a node as a highway if the highway type is in the ALLOW_HIGHWAY_TYPES
+        else if (activeState.equals("way") && qName.equals("tag") && attributes.getValue("k")
+                .equals("highway")) {
+            if (ALLOWED_HIGHWAY_TYPES.contains(attributes.getValue("v"))) {
+                for (Long ref : wayNodes) {
+                    idMap.get(ref).isHighway = true;
+                }
+            }
+        }
+        else if (activeState.equals("node") && qName.equals("tag") && attributes.getValue("k")
                 .equals("name")) {
-            currentNode.setName(attributes.getValue("k"));
+            currentNode.setName(attributes.getValue("v"));
         }
     }
 

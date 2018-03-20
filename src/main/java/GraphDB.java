@@ -22,7 +22,6 @@ public class GraphDB {
      */
     public GraphDB(String db_path) {
         mapGraph = new TreeMap<>();
-
         try {
             File inputFile = new File(db_path);
             SAXParserFactory factory = SAXParserFactory.newInstance();
@@ -54,7 +53,6 @@ public class GraphDB {
         mapGraph.get(dest).add(source);
     }
 
-
     /**
      * Helper to process strings into their "cleaned" form, ignoring punctuation and capitalization.
      * @param s Input string.
@@ -80,5 +78,7 @@ public class GraphDB {
                 it.remove();
             }
         }
+//        System.out.println("highway nodes " + count);
+//        System.out.println("total nodes: " + mapGraph.keySet().size());
     }
 }

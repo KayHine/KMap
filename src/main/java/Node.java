@@ -4,11 +4,13 @@ public class Node implements Comparable<Node> {
     public double latitude;
     public double longitude;
     public String name;
+    public boolean isHighway;
 
     public Node(long id, double lat, double lon) {
         this.id = id;
         this.latitude = lat;
         this.longitude = lon;
+        this.isHighway = false;
     }
 
     public void setName(String name) {
@@ -42,14 +44,18 @@ public class Node implements Comparable<Node> {
 
     @Override
     public int compareTo(Node o) {
-        if (this.longitude < o.longitude) {
-            return -1;
-        }
-        else if (this.longitude > o.longitude) {
-            return 1;
+
+        Double lon = new Double(this.longitude);
+        Double oLon = new Double(o.longitude);
+        int comp = lon.compareTo(oLon);
+
+        if (comp != 0) {
+            return comp;
         }
         else {
-            return 0;
+            Double lat = new Double(this.latitude);
+            Double oLat = new Double(o.latitude);
+            return lat.compareTo(oLat);
         }
     }
 }
