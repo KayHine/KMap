@@ -393,8 +393,81 @@ public class MapServer {
      * @return A LinkedList of node ids from the start of the route to the end.
      */
     public static LinkedList<Long> findAndSetRoute(Map<String, Double> params) {
+        LinkedList<Long> shortestRoute = new LinkedList<>();
+        double start_lon = params.get("start_lon");
+        double start_lat = params.get("start_lat");
+        double end_lon = params.get("end_lon");
+        double end_lat = params.get("end_lat");
 
-        return new LinkedList<>();
+        Node startNode = getClosestNode(start_lon, start_lat);
+        Node endNode = getClosestNode(end_lon, end_lat);
+
+        shortestRoute = getShortestPath(startNode, endNode);
+
+        return shortestRoute;
+    }
+
+    public static Node getClosestNode(double lon, double lat) {
+
+        return null;
+    }
+
+    /**
+     * Use A* search algorithm to get the shortest route from the start node to end node
+     * Prority associated with a node: f(n) = g(n) + h(n)
+     * g(n): shortest known path distance from s to n
+     * h(n): Euclidean distance from n to t. Distance between two points = sqrt((x1 - x0)^2 + (y1 - y0)^2))
+     * @param start
+     * @param end
+     * @return
+     */
+    public static LinkedList<Long> getShortestPath(Node start, Node end) {
+        // Using cool Lambda function to create anonymous Comparator function class
+        // to sort Nodes based on calculated heuristic
+        final Queue<Node> openQueue = new PriorityQueue<>(11, (node1, node2) -> {
+            if (node1.getHeuristic() < node2.getHeuristic())
+                return -1;
+            else if (node1.getHeuristic() > node2.getHeuristic())
+                return 1;
+            return 0;
+        });
+
+        start.setDist(0);
+        start.setHeuristic(end);
+        openQueue.add(start);
+
+        final LinkedList<Long> shortestPath = new LinkedList<>();
+        final HashSet<Node> closedList = new HashSet<>();
+
+        while (!openQueue.isEmpty()) {
+            final Node currentNode = openQueue.poll();
+
+            if (currentNode.equals(end)) {
+                shortestPath.add(currentNode.id);
+                return shortestPath;
+            }
+
+            closedList.add(currentNode);
+
+            for (Node neighbor : g.getNeighbors(currentNode)) {
+                if (closedList.contains(neighbor)) continue;
+
+                double distance = neighbor.distanceBetweenNodes(currentNode);
+                double tentativeDist = distance + currentNode.getDist();
+
+                if (tentativeDist < neighbor.getDist()) {
+                    neighbor.setDist(tentativeDist);
+                    neighbor.setHeuristic(end);
+
+                    shortestPath.add(neighbor.id);
+                    if (!openQueue.contains(neighbor)) {
+                        openQueue.add(neighbor);
+                    }
+                }
+            }
+        }
+
+        return shortestPath;
     }
 
     /**

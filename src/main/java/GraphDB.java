@@ -53,6 +53,10 @@ public class GraphDB {
         mapGraph.get(dest).add(source);
     }
 
+    public HashSet<Node> getNeighbors(Node key) {
+        return mapGraph.get(key);
+    }
+
     /**
      * Helper to process strings into their "cleaned" form, ignoring punctuation and capitalization.
      * @param s Input string.
