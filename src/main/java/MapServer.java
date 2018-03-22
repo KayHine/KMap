@@ -399,10 +399,10 @@ public class MapServer {
         double end_lon = params.get("end_lon");
         double end_lat = params.get("end_lat");
 
-        Node startNode = getClosestNode(start_lon, start_lat);
-        Node endNode = getClosestNode(end_lon, end_lat);
-
-        shortestRoute = getShortestPath(startNode, endNode);
+//        Node startNode = getClosestNode(start_lon, start_lat);
+//        Node endNode = getClosestNode(end_lon, end_lat);
+//
+//        shortestRoute = getShortestPath(startNode, endNode);
 
         return shortestRoute;
     }

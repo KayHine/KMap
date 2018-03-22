@@ -1,4 +1,4 @@
-public class Node implements Comparable<Node> {
+public class Node {
 
     public long id;
     public double latitude;
@@ -47,6 +47,11 @@ public class Node implements Comparable<Node> {
                 Math.pow(destination.latitude - this.latitude, 2));
     }
 
+    public double distanceSquared(Node destination) {
+        return Math.pow(destination.longitude - this.longitude, 2) +
+                Math.pow(destination.latitude - this.latitude, 2);
+    }
+
     // Overriding equals() and hashCode in order to use Nodes as a
     // key in a TreeMap. I want to use the node's refID as the key but i also want
     // to store the entire Node with all its information as well
@@ -73,22 +78,5 @@ public class Node implements Comparable<Node> {
         }
 
         return false;
-    }
-
-    @Override
-    public int compareTo(Node o) {
-
-        Double lon = new Double(this.longitude);
-        Double oLon = new Double(o.longitude);
-        int comp = lon.compareTo(oLon);
-
-        if (comp != 0) {
-            return comp;
-        }
-        else {
-            Double lat = new Double(this.latitude);
-            Double oLat = new Double(o.latitude);
-            return lat.compareTo(oLat);
-        }
     }
 }

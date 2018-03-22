@@ -14,14 +14,16 @@ import javax.xml.parsers.SAXParserFactory;
  */
 public class GraphDB {
 
-    private TreeMap<Node, HashSet<Node>> mapGraph;
+    private HashMap<Node, HashSet<Node>> mapGraph;
+    private KdTree nearestKdTree;
+    double minlon, minlat, maxlon, maxlat;
 
     /**
      * Example constructor shows how to create and start an XML parser.
      * @param db_path Path to the XML file to be parsed.
      */
     public GraphDB(String db_path) {
-        mapGraph = new TreeMap<>();
+        mapGraph = new HashMap<>();
         try {
             File inputFile = new File(db_path);
             SAXParserFactory factory = SAXParserFactory.newInstance();
@@ -31,6 +33,7 @@ public class GraphDB {
         } catch (ParserConfigurationException | SAXException | IOException e) {
             e.printStackTrace();
         }
+        nearestKdTree = new KdTree(mapGraph.keySet(), 0);
         clean();
     }
 
@@ -85,4 +88,6 @@ public class GraphDB {
 //        System.out.println("highway nodes " + count);
 //        System.out.println("total nodes: " + mapGraph.keySet().size());
     }
+
+
 }

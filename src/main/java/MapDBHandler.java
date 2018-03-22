@@ -56,7 +56,14 @@ public class MapDBHandler extends DefaultHandler {
     public void startElement(String uri, String localName, String qName, Attributes attributes)
             throws SAXException {
         /* Some example code on how you might begin to parse XML files. */
-        if (qName.equals("node")) {
+        if (qName.equals("bounds")) {
+            g.minlon = Double.parseDouble(attributes.getValue("minlon"));
+            g.minlat = Double.parseDouble(attributes.getValue("minlat"));
+            g.maxlon = Double.parseDouble(attributes.getValue("maxlon"));
+            g.maxlat = Double.parseDouble(attributes.getValue("maxlat"));
+
+        }
+        else if (qName.equals("node")) {
             activeState = "node";
             long id = Long.parseLong(attributes.getValue("id"));
             double lat = Double.parseDouble(attributes.getValue("lat"));
