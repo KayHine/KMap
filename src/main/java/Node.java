@@ -11,7 +11,7 @@ public class Node {
 
     private double INFINITY = Double.POSITIVE_INFINITY;
 
-    public Node(long id, double lat, double lon) {
+    public Node(long id, double lon, double lat) {
         this.id = id;
         this.latitude = lat;
         this.longitude = lon;

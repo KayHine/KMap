@@ -61,14 +61,13 @@ public class MapDBHandler extends DefaultHandler {
             g.minlat = Double.parseDouble(attributes.getValue("minlat"));
             g.maxlon = Double.parseDouble(attributes.getValue("maxlon"));
             g.maxlat = Double.parseDouble(attributes.getValue("maxlat"));
-
         }
         else if (qName.equals("node")) {
             activeState = "node";
             long id = Long.parseLong(attributes.getValue("id"));
             double lat = Double.parseDouble(attributes.getValue("lat"));
             double lon = Double.parseDouble(attributes.getValue("lon"));
-            Node node = new Node(id, lat, lon);
+            Node node = new Node(id, lon, lat);
             currentNode = node;
             g.putNode(node);
             idMap.put(id, node);

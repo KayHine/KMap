@@ -33,8 +33,8 @@ public class GraphDB {
         } catch (ParserConfigurationException | SAXException | IOException e) {
             e.printStackTrace();
         }
-        nearestKdTree = new KdTree(mapGraph.keySet(), 0);
         clean();
+        nearestKdTree = new KdTree(mapGraph.keySet());
     }
 
     public void putNode(Node node) {
@@ -58,6 +58,12 @@ public class GraphDB {
 
     public HashSet<Node> getNeighbors(Node key) {
         return mapGraph.get(key);
+    }
+
+    public Node getNearestNode(double lon, double lat) {
+        Node target = new Node(0, lon, lat);
+        double[] boundingBox = {minlon, minlat, maxlon, maxlat};
+        return nearestKdTree.nearest(target, boundingBox);
     }
 
     /**

@@ -287,6 +287,15 @@ public class MapServer {
             x += TILE_SIZE;
         }
 
+        /* ------------------------*/
+        Graphics2D graphics = (Graphics2D) g;
+        BasicStroke line = new BasicStroke(ROUTE_STROKE_WIDTH_PX,
+                BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
+        graphics.setStroke(line);
+        graphics.setPaint(ROUTE_STROKE_COLOR);
+        graphics.drawLine(0, rasteredImage.getHeight() / 2, rasteredImage.getWidth(), rasteredImage.getHeight() / 2);
+        /* ------------------------*/
+
         return rasteredImage;
     }
 
@@ -399,17 +408,12 @@ public class MapServer {
         double end_lon = params.get("end_lon");
         double end_lat = params.get("end_lat");
 
-//        Node startNode = getClosestNode(start_lon, start_lat);
-//        Node endNode = getClosestNode(end_lon, end_lat);
-//
-//        shortestRoute = getShortestPath(startNode, endNode);
+        Node startNode = g.getNearestNode(start_lon, start_lat);
+        Node endNode = g.getNearestNode(end_lon, end_lat);
+
+        shortestRoute = getShortestPath(startNode, endNode);
 
         return shortestRoute;
-    }
-
-    public static Node getClosestNode(double lon, double lat) {
-
-        return null;
     }
 
     /**
