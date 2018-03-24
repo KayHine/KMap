@@ -62,6 +62,7 @@ public class MapServer {
     /* Define any static variables here. Do not define any instance variables of MapServer. */
     private static GraphDB g;
     private static QuadTree tree;
+    private static LinkedList<Long> route;
 
     /**
      * Place any initialization statements that will be run before the server main loop here.
@@ -82,6 +83,8 @@ public class MapServer {
         endTime = System.nanoTime();
         duration = (endTime - startTime) / 1000000;
         System.out.println("Tree Build Duration: " + duration + " ms");
+
+        route = new LinkedList<>();
     }
 
     public static void main(String[] args) {
@@ -119,7 +122,7 @@ public class MapServer {
         get("/route", (req, res) -> {
             HashMap<String, Double> params =
                     getRequestParams(req, REQUIRED_ROUTE_REQUEST_PARAMS);
-            LinkedList<Long> route = findAndSetRoute(params);
+            route = findAndSetRoute(params);
             return !route.isEmpty();
         });
 
@@ -253,7 +256,7 @@ public class MapServer {
     }
 
     public static BufferedImage buildRasterImage(Iterable<QTreeNode> rasterNodes, boolean query_success) {
-        BufferedImage rasteredImage = null;
+        BufferedImage rasteredImage;
         HashSet<Double> latitudes = new HashSet<>();
 
         // Find the number of unique latitudes in the set of rasterNodes to determine the height of the image
@@ -267,7 +270,7 @@ public class MapServer {
         int width = ((LinkedList<QTreeNode>) rasterNodes).size() / height;
 
         rasteredImage = new BufferedImage(width * TILE_SIZE, height * TILE_SIZE, BufferedImage.TYPE_INT_RGB);
-        Graphics g = rasteredImage.getGraphics();
+        Graphics graphics = rasteredImage.getGraphics();
 
         for (QTreeNode node : rasterNodes) {
             BufferedImage tile = null;
@@ -283,21 +286,67 @@ public class MapServer {
                 e.printStackTrace();
             }
 
-            g.drawImage(tile, x, y, null);
+            graphics.drawImage(tile, x, y, null);
             x += TILE_SIZE;
         }
 
         /* ------------------------*/
-        Graphics2D graphics = (Graphics2D) g;
-        BasicStroke line = new BasicStroke(ROUTE_STROKE_WIDTH_PX,
-                BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
-        graphics.setStroke(line);
-        graphics.setPaint(ROUTE_STROKE_COLOR);
-        graphics.drawLine(0, rasteredImage.getHeight() / 2, rasteredImage.getWidth(), rasteredImage.getHeight() / 2);
+        // Build route if it exists
+        if (!route.isEmpty() && route != null) {
+            Graphics2D graphics2D = (Graphics2D) graphics;
+            BasicStroke line = new BasicStroke(ROUTE_STROKE_WIDTH_PX, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
+            graphics2D.setStroke(line);
+            graphics2D.setPaint(ROUTE_STROKE_COLOR);
+            // Get raster image bounds
+            double minLat = ((LinkedList<QTreeNode>) rasterNodes).getLast().lrlat;
+            double maxLat = ((LinkedList<QTreeNode>) rasterNodes).getFirst().ullat;
+            double minLon = ((LinkedList<QTreeNode>) rasterNodes).getFirst().ullon;
+            double maxLon = ((LinkedList<QTreeNode>) rasterNodes).getLast().lrlon;
+            // Calculate scale pixel/coordinate
+            double lonScale = pixelPerCoordinate(minLon, maxLon, minLat, maxLat, rasteredImage, "lon");
+            double latScale = pixelPerCoordinate(minLon, maxLon, minLat, maxLat, rasteredImage, "lat");
+            for (int i = 0; i < route.size() - 1; i++) {
+                Node point1 = g.getNodeByID(route.get(i));
+                Node point2 = g.getNodeByID(route.get(i + 1));
+                int point1_x = getPixelPositionOffset(point1, minLat, latScale, minLon, lonScale, "lon");
+                int point1_y = getPixelPositionOffset(point1, minLat, latScale, minLon, lonScale, "lat");
+                int point2_x = getPixelPositionOffset(point2, minLat, latScale, minLon, lonScale, "lat");
+                int point2_y = getPixelPositionOffset(point2, minLat, latScale, minLon, lonScale, "lat");
+                graphics2D.drawLine(point1_x, point1_y, point2_x, point2_y);
+            }
+        }
         /* ------------------------*/
 
         return rasteredImage;
     }
+
+    public static int getPixelPositionOffset(Node point, double minLat, double latScale, double minLon,
+                                       double lonScale, String coord) {
+        int pos = 0;
+        if (coord == "lat") {
+            pos = (int) ((point.latitude - minLat) * latScale);
+        }
+        else if (coord == "lon") {
+            pos = (int) ((point.longitude - minLon) * lonScale);
+        }
+        return pos;
+    }
+
+    public static double pixelPerCoordinate(double minLon, double maxLon, double minLat, double maxLat,
+                                            BufferedImage rasteredImage, String coord) {
+        double scale = 0;
+        if (coord == "lat") {
+
+            scale = rasteredImage.getHeight() / (maxLat - minLat);
+        }
+        else if (coord == "lon") {
+
+            scale = rasteredImage.getWidth() / (maxLon - minLon);
+        }
+
+        return scale;
+    }
+
 
     /**
      * Initializing function that createst the entire QuadTree with all images
@@ -488,7 +537,7 @@ public class MapServer {
      * cleaned <code>prefix</code>.
      */
     public static List<String> getLocationsByPrefix(String prefix) {
-        return new LinkedList<>();
+        return g.getAutoCompleteSuggestions(prefix);
     }
 
     /**

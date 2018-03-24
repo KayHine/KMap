@@ -15,7 +15,9 @@ import javax.xml.parsers.SAXParserFactory;
 public class GraphDB {
 
     private HashMap<Node, HashSet<Node>> mapGraph;
+    public HashMap<Long, Node> idMap;
     private KdTree nearestKdTree;
+    public Trie autoComplete;
     double minlon, minlat, maxlon, maxlat;
 
     /**
@@ -24,6 +26,8 @@ public class GraphDB {
      */
     public GraphDB(String db_path) {
         mapGraph = new HashMap<>();
+        idMap = new HashMap<>();
+        autoComplete = new Trie();
         try {
             File inputFile = new File(db_path);
             SAXParserFactory factory = SAXParserFactory.newInstance();
@@ -60,10 +64,34 @@ public class GraphDB {
         return mapGraph.get(key);
     }
 
+    /**
+     * idMap function to access the HashMap
+     *
+     * @param id
+     * @return
+     */
+    public Node getNodeByID(long id) {
+        return idMap.get(id);
+    }
+
+    /**
+     * kdTree function to get the nearest neighboring Node
+     *
+     * @param lon
+     * @param lat
+     * @return
+     */
     public Node getNearestNode(double lon, double lat) {
         Node target = new Node(0, lon, lat);
         double[] boundingBox = {minlon, minlat, maxlon, maxlat};
         return nearestKdTree.nearest(target, boundingBox);
+    }
+
+    /**
+     * Trie function to get auto-complete words
+     */
+    public LinkedList<String> getAutoCompleteSuggestions(String query) {
+        return autoComplete.getAutoSuggestions(query);
     }
 
     /**

@@ -35,7 +35,7 @@ public class MapDBHandler extends DefaultHandler {
     public MapDBHandler(GraphDB g) {
         this.g = g;
         wayNodes = new ArrayList<>();
-        idMap = new HashMap<>();
+        idMap = g.idMap;
     }
 
     /**
@@ -92,6 +92,8 @@ public class MapDBHandler extends DefaultHandler {
         else if (activeState.equals("node") && qName.equals("tag") && attributes.getValue("k")
                 .equals("name")) {
             currentNode.setName(attributes.getValue("v"));
+            System.out.println(attributes.getValue("v"));
+            g.autoComplete.insert(attributes.getValue("v"));
         }
     }
 
