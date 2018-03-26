@@ -16,6 +16,7 @@ public class GraphDB {
 
     private HashMap<Node, HashSet<Node>> mapGraph;
     public HashMap<Long, Node> idMap;
+    public HashMap<String, LinkedList<Node>> nodeNameMap;
     private KdTree nearestKdTree;
     public Trie autoComplete;
     double minlon, minlat, maxlon, maxlat;
@@ -28,6 +29,7 @@ public class GraphDB {
         mapGraph = new HashMap<>();
         idMap = new HashMap<>();
         autoComplete = new Trie();
+        nodeNameMap = new HashMap<>();
         try {
             File inputFile = new File(db_path);
             SAXParserFactory factory = SAXParserFactory.newInstance();
@@ -91,16 +93,41 @@ public class GraphDB {
      * Trie function to get auto-complete words
      */
     public LinkedList<String> getAutoCompleteSuggestions(String query) {
-        return autoComplete.getAutoSuggestions(query);
+        query = cleanString(query);
+        LinkedList<String> cleanNames = autoComplete.getAutoSuggestions(query);
+
+        if (cleanNames == null) return null;
+
+        LinkedList<String> actualNames = new LinkedList<>();
+        for (String name : cleanNames) {
+            if (nodeNameMap.containsKey(name)) {
+                Node matchingNode = nodeNameMap.get(name).getFirst();
+                actualNames.add(matchingNode.name);
+            }
+        }
+
+        return actualNames;
     }
 
-    /**
-     * Helper to process strings into their "cleaned" form, ignoring punctuation and capitalization.
-     * @param s Input string.
-     * @return Cleaned string.
-     */
-    static String cleanString(String s) {
-        return s.replaceAll("[^a-zA-Z ]", "").toLowerCase();
+    public LinkedList<Map<String, Object>> getLocationData(String query) {
+        LinkedList<Map<String, Object>> locationData = new LinkedList<>();
+        LinkedList<String> matchingLocations = new LinkedList<>();
+        String cleanQuery = cleanString(query);
+        matchingLocations = autoComplete.getAutoSuggestions(cleanQuery);
+        for (String name : matchingLocations) {
+            if (nodeNameMap.containsKey(name)) {
+                for (Node n : nodeNameMap.get(name)) {
+                    HashMap<String, Object> location = new HashMap<>();
+                    location.put("lat", n.latitude);
+                    location.put("lon", n.longitude);
+                    location.put("name", n.name);
+                    location.put("id", n.id);
+                    locationData.add(location);
+                }
+            }
+        }
+
+        return locationData;
     }
 
     /**
@@ -123,5 +150,13 @@ public class GraphDB {
 //        System.out.println("total nodes: " + mapGraph.keySet().size());
     }
 
+    /**
+     * Helper to process strings into their "cleaned" form, ignoring punctuation and capitalization.
+     * @param s Input string.
+     * @return Cleaned string.
+     */
+    static String cleanString(String s) {
+        return s.replaceAll("[^a-zA-Z ]", "").toLowerCase();
+    }
 
 }

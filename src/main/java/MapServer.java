@@ -70,20 +70,9 @@ public class MapServer {
      * This is for testing purposes, and you may fail tests otherwise.
      **/
     public static void initialize() {
-        long startTime = System.nanoTime();
         g = new GraphDB(OSM_DB_PATH);
-        long endTime = System.nanoTime();
-        long duration = (endTime - startTime) / 1000000;
-        System.out.println("Graph Build Duration: " + duration + " ms");
-
         tree = new QuadTree();
-
-        startTime = System.nanoTime();
         initializeTree(tree);
-        endTime = System.nanoTime();
-        duration = (endTime - startTime) / 1000000;
-        System.out.println("Tree Build Duration: " + duration + " ms");
-
         route = new LinkedList<>();
     }
 
@@ -451,7 +440,7 @@ public class MapServer {
      * @return A LinkedList of node ids from the start of the route to the end.
      */
     public static LinkedList<Long> findAndSetRoute(Map<String, Double> params) {
-        LinkedList<Long> shortestRoute = new LinkedList<>();
+        LinkedList<Long> shortestRoute;
         double start_lon = params.get("start_lon");
         double start_lat = params.get("start_lat");
         double end_lon = params.get("end_lon");
@@ -553,6 +542,6 @@ public class MapServer {
      * "id" -> Number, The id of the node. <br>
      */
     public static List<Map<String, Object>> getLocations(String locationName) {
-        return new LinkedList<>();
+        return g.getLocationData(locationName);
     }
 }

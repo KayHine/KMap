@@ -37,11 +37,33 @@ public class Trie {
         }
     }
 
+    // Returns if there is any word in the trie that starts with the given prefix
+    public boolean startsWith(String prefix) {
+        if (searchNode(prefix) == null) return false;
+
+        return true;
+    }
+
+    public TrieNode searchNode(String prefix) {
+        HashMap<Character, TrieNode> children = root.children;
+        TrieNode t = null;
+        for (int i = 0; i < prefix.length(); i++) {
+            char c = prefix.charAt(i);
+            if (children.containsKey(c)) {
+                t = children.get(c);
+                children = t.children;
+            }
+            else {
+                return null;
+            }
+        }
+        return t;
+    }
+
     // Gather auto-complete list
     // Inspiration: https://www.geeksforgeeks.org/auto-complete-feature-using-trie/
     public LinkedList<String> getAutoSuggestions(String query) {
-        LinkedList<String> autoSuggestions = new LinkedList<>();
-        autoSuggestions = getSuggestionsHelper(root, query);
+        LinkedList<String> autoSuggestions = getSuggestionsHelper(root, query);
         return autoSuggestions;
     }
 
@@ -81,12 +103,12 @@ public class Trie {
 
         if (isLastNode(node)) return;
 
-        for (Character c : node.children.keySet()) {
-            // Append child character to current prefix String
-            currPrefix.concat(Character.toString(c));
 
+        for (Character c : node.children.keySet()) {
             // Recursively go through the rest
-            getSubtreeSuggestions(suggestions, node.children.get(c), currPrefix);
+            // Passing in "currPrefix + c.toString" as an argument will keep the currPrefix in sync
+            // with the current level/node
+            getSubtreeSuggestions(suggestions, node.children.get(c), currPrefix + c.toString());
         }
     }
 

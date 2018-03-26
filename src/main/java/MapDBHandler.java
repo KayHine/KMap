@@ -91,9 +91,20 @@ public class MapDBHandler extends DefaultHandler {
         }
         else if (activeState.equals("node") && qName.equals("tag") && attributes.getValue("k")
                 .equals("name")) {
-            currentNode.setName(attributes.getValue("v"));
-            System.out.println(attributes.getValue("v"));
-            g.autoComplete.insert(attributes.getValue("v"));
+            String name = attributes.getValue("v");
+            currentNode.setName(name);
+            // Clean the Node name after setting the name and putting it in the Node-Name Map
+            String cleanName = cleanString(name);
+
+            // Need to account for locations that have the same name, ie. multiple Chase banks
+            if (!g.nodeNameMap.containsKey(cleanName)) {
+                g.nodeNameMap.put(cleanName, new LinkedList<Node>());
+                g.nodeNameMap.get(cleanName).add(currentNode);
+            }
+            else {
+                g.nodeNameMap.get(cleanName).add(currentNode);
+            }
+            g.autoComplete.insert(cleanName);
         }
     }
 
@@ -120,6 +131,12 @@ public class MapDBHandler extends DefaultHandler {
         }
     }
 
-    // TODO: Do i need to clear out idMap???
-
+    /**
+     * Helper to process strings into their "cleaned" form, ignoring punctuation and capitalization.
+     * @param s Input string.
+     * @return Cleaned string.
+     */
+    static String cleanString(String s) {
+        return s.replaceAll("[^a-zA-Z ]", "").toLowerCase();
+    }
 }
