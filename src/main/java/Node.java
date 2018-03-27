@@ -17,6 +17,7 @@ public class Node {
         this.longitude = lon;
         this.isHighway = false;
         this.dist = INFINITY;
+        this.heuristic = INFINITY;
     }
 
     public void setName(String name) {

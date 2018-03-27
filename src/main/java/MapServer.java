@@ -9,6 +9,8 @@ import java.util.List;
 
 /* Maven is used to pull in these dependencies. */
 import com.google.gson.Gson;
+import sun.awt.image.ImageWatched;
+
 import javax.imageio.ImageIO;
 import static spark.Spark.*;
 
@@ -471,28 +473,32 @@ public class MapServer {
                 return -1;
             else if (node1.getHeuristic() > node2.getHeuristic())
                 return 1;
-            return 0;
+            else
+                return 0;
         });
 
         start.setDist(0);
         start.setHeuristic(end);
         openQueue.add(start);
 
-        final LinkedList<Long> shortestPath = new LinkedList<>();
+        final HashMap<Long, Long> cameFrom = new HashMap<>();
         final HashSet<Node> closedList = new HashSet<>();
 
         while (!openQueue.isEmpty()) {
             final Node currentNode = openQueue.poll();
 
             if (currentNode.equals(end)) {
-                shortestPath.add(currentNode.id);
-                return shortestPath;
+                return reconstructPath(cameFrom, currentNode.id);
             }
 
             closedList.add(currentNode);
 
             for (Node neighbor : g.getNeighbors(currentNode)) {
                 if (closedList.contains(neighbor)) continue;
+
+                if (!openQueue.contains(neighbor)) {
+                    openQueue.add(neighbor);
+                }
 
                 double distance = neighbor.distanceBetweenNodes(currentNode);
                 double tentativeDist = distance + currentNode.getDist();
@@ -501,15 +507,23 @@ public class MapServer {
                     neighbor.setDist(tentativeDist);
                     neighbor.setHeuristic(end);
 
-                    shortestPath.add(neighbor.id);
-                    if (!openQueue.contains(neighbor)) {
-                        openQueue.add(neighbor);
-                    }
+                    cameFrom.put(neighbor.id, currentNode.id);
                 }
             }
         }
 
-        return shortestPath;
+        return null;
+    }
+
+    public static LinkedList<Long> reconstructPath(HashMap<Long, Long> cameFrom, long current) {
+        LinkedList<Long> path = new LinkedList<>();
+        path.add(current);
+        while (cameFrom.containsKey(current)) {
+            current = cameFrom.get(current);
+            path.add(current);
+        }
+
+        return path;
     }
 
     /**
