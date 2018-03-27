@@ -283,7 +283,7 @@ public class MapServer {
 
         /* ------------------------*/
         // Build route if it exists
-        if (!route.isEmpty() && route != null) {
+        if (route != null) {
             Graphics2D graphics2D = (Graphics2D) graphics;
             BasicStroke line = new BasicStroke(ROUTE_STROKE_WIDTH_PX, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
             graphics2D.setStroke(line);
@@ -500,14 +500,12 @@ public class MapServer {
                     openQueue.add(neighbor);
                 }
 
-                double distance = neighbor.distanceBetweenNodes(currentNode);
-                double tentativeDist = distance + currentNode.getDist();
+                double tentativeDist = neighbor.distanceBetweenNodes(currentNode) + currentNode.getDist();
 
                 if (tentativeDist < neighbor.getDist()) {
+                    cameFrom.put(neighbor.id, currentNode.id);
                     neighbor.setDist(tentativeDist);
                     neighbor.setHeuristic(end);
-
-                    cameFrom.put(neighbor.id, currentNode.id);
                 }
             }
         }
