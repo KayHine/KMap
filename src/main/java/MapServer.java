@@ -297,8 +297,8 @@ public class MapServer {
             double lonScale = pixelPerCoordinate(minLon, maxLon, minLat, maxLat, rasteredImage, "lon");
             double latScale = pixelPerCoordinate(minLon, maxLon, minLat, maxLat, rasteredImage, "lat");
             for (int i = 0; i < route.size() - 1; i++) {
-                Node point1 = g.getNodeByID(route.get(i));
-                Node point2 = g.getNodeByID(route.get(i + 1));
+                Node point1 = g.getNodeByID(route.get(0));
+                Node point2 = g.getNodeByID(route.get(1));
                 int point1_x = getPixelPositionOffset(point1, minLat, latScale, minLon, lonScale, "lon");
                 int point1_y = getPixelPositionOffset(point1, minLat, latScale, minLon, lonScale, "lat");
                 int point2_x = getPixelPositionOffset(point2, minLat, latScale, minLon, lonScale, "lat");
@@ -485,7 +485,7 @@ public class MapServer {
         final HashSet<Node> closedList = new HashSet<>();
 
         while (!openQueue.isEmpty()) {
-            final Node currentNode = openQueue.poll();
+            Node currentNode = openQueue.poll();
 
             if (currentNode.equals(end)) {
                 return reconstructPath(cameFrom, currentNode.id);
@@ -496,16 +496,20 @@ public class MapServer {
             for (Node neighbor : g.getNeighbors(currentNode)) {
                 if (closedList.contains(neighbor)) continue;
 
-                if (!openQueue.contains(neighbor)) {
-                    openQueue.add(neighbor);
-                }
-
                 double tentativeDist = neighbor.distanceBetweenNodes(currentNode) + currentNode.getDist();
 
-                if (tentativeDist < neighbor.getDist()) {
+                if (!openQueue.contains(neighbor)) {
                     cameFrom.put(neighbor.id, currentNode.id);
                     neighbor.setDist(tentativeDist);
                     neighbor.setHeuristic(end);
+                    openQueue.add(neighbor);
+                }
+                else {
+                    if (neighbor.getDist() > tentativeDist) {
+                        cameFrom.put(neighbor.id, currentNode.id);
+                        neighbor.setDist(tentativeDist);
+                        neighbor.setHeuristic(end);
+                    }
                 }
             }
         }
