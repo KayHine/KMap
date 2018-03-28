@@ -9,8 +9,6 @@ import java.util.List;
 
 /* Maven is used to pull in these dependencies. */
 import com.google.gson.Gson;
-import sun.awt.image.ImageWatched;
-
 import javax.imageio.ImageIO;
 import static spark.Spark.*;
 
@@ -72,9 +70,19 @@ public class MapServer {
      * This is for testing purposes, and you may fail tests otherwise.
      **/
     public static void initialize() {
+        long startTime = System.nanoTime();
         g = new GraphDB(OSM_DB_PATH);
+        long endTime = System.nanoTime();
+        long duration = (endTime - startTime) / 1000000;
+        System.out.println("Graph build time: " + duration + "ms");
+
+        startTime = System.nanoTime();
         tree = new QuadTree();
         initializeTree(tree);
+        endTime = System.nanoTime();
+        duration = (endTime - startTime) / 1000000;
+        System.out.println("Tree build time: " + duration + "ms");
+
         route = new LinkedList<>();
     }
 
@@ -283,7 +291,7 @@ public class MapServer {
 
         /* ------------------------*/
         // Build route if it exists
-        if (route != null) {
+        if (route != null && !route.isEmpty()) {
             Graphics2D graphics2D = (Graphics2D) graphics;
             BasicStroke line = new BasicStroke(ROUTE_STROKE_WIDTH_PX, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
             graphics2D.setStroke(line);
@@ -297,11 +305,11 @@ public class MapServer {
             double lonScale = pixelPerCoordinate(minLon, maxLon, minLat, maxLat, rasteredImage, "lon");
             double latScale = pixelPerCoordinate(minLon, maxLon, minLat, maxLat, rasteredImage, "lat");
             for (int i = 0; i < route.size() - 1; i++) {
-                Node point1 = g.getNodeByID(route.get(0));
-                Node point2 = g.getNodeByID(route.get(1));
+                Node point1 = g.getNodeByID(route.get(i));
+                Node point2 = g.getNodeByID(route.get(i + 1));
                 int point1_x = getPixelPositionOffset(point1, minLat, latScale, minLon, lonScale, "lon");
                 int point1_y = getPixelPositionOffset(point1, minLat, latScale, minLon, lonScale, "lat");
-                int point2_x = getPixelPositionOffset(point2, minLat, latScale, minLon, lonScale, "lat");
+                int point2_x = getPixelPositionOffset(point2, minLat, latScale, minLon, lonScale, "lon");
                 int point2_y = getPixelPositionOffset(point2, minLat, latScale, minLon, lonScale, "lat");
                 graphics2D.drawLine(point1_x, point1_y, point2_x, point2_y);
             }
@@ -484,7 +492,7 @@ public class MapServer {
         final HashMap<Long, Long> cameFrom = new HashMap<>();
         final HashSet<Node> closedList = new HashSet<>();
 
-        while (!openQueue.isEmpty()) {
+         while (!openQueue.isEmpty()) {
             Node currentNode = openQueue.poll();
 
             if (currentNode.equals(end)) {
@@ -514,7 +522,7 @@ public class MapServer {
             }
         }
 
-        return null;
+        return new LinkedList<Long>();
     }
 
     public static LinkedList<Long> reconstructPath(HashMap<Long, Long> cameFrom, long current) {
@@ -532,6 +540,9 @@ public class MapServer {
      * Clear the current found route, if it exists.
      */
     public static void clearRoute() {
+        if (!route.isEmpty()) {
+            route.clear();
+        }
     }
 
     /**

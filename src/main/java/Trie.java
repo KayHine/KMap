@@ -1,8 +1,5 @@
-import sun.awt.image.ImageWatched;
-
 import java.util.HashMap;
 import java.util.LinkedList;
-import java.util.List;
 
 public class Trie {
 
@@ -67,6 +64,14 @@ public class Trie {
         return autoSuggestions;
     }
 
+    /**
+     * Given a node and a query string, traverse the Trie until the end of the query string
+     * If at the end of the query string, the node is a leaf, then we're done and found a 1-1 match
+     * Else call subtree helper function to gather the rest of the words in the subtrees
+     * @param node
+     * @param query
+     * @return
+     */
     private LinkedList<String> getSuggestionsHelper(TrieNode node, String query) {
         LinkedList<String> suggestions = new LinkedList<>();
         TrieNode current = node;
@@ -96,13 +101,18 @@ public class Trie {
         return suggestions;
     }
 
+    /**
+     * Traverse a subtree to gather the rest of the complete words
+     * @param suggestions
+     * @param node
+     * @param currPrefix
+     */
     private void getSubtreeSuggestions(LinkedList<String> suggestions, TrieNode node, String currPrefix) {
         if (node.isLeaf) {
             suggestions.add(currPrefix);
         }
 
         if (isLastNode(node)) return;
-
 
         for (Character c : node.children.keySet()) {
             // Recursively go through the rest

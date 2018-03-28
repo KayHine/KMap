@@ -93,11 +93,13 @@ public class GraphDB {
      * Trie function to get auto-complete words
      */
     public LinkedList<String> getAutoCompleteSuggestions(String query) {
+        // clean the string by setting all letters to lower
         query = cleanString(query);
         LinkedList<String> cleanNames = autoComplete.getAutoSuggestions(query);
 
         if (cleanNames == null) return null;
 
+        // retrieve the actual names with full capitalization from the nodeNameMap
         LinkedList<String> actualNames = new LinkedList<>();
         for (String name : cleanNames) {
             if (nodeNameMap.containsKey(name)) {
@@ -116,6 +118,8 @@ public class GraphDB {
         matchingLocations = autoComplete.getAutoSuggestions(cleanQuery);
         for (String name : matchingLocations) {
             if (nodeNameMap.containsKey(name)) {
+                // There could be multiple locations with the same name so
+                // we build the location data for all of them, ie. multiple Chase Banks
                 for (Node n : nodeNameMap.get(name)) {
                     HashMap<String, Object> location = new HashMap<>();
                     location.put("lat", n.latitude);
