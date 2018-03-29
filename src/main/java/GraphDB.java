@@ -14,7 +14,7 @@ import javax.xml.parsers.SAXParserFactory;
  */
 public class GraphDB {
 
-    private HashMap<Node, HashSet<Node>> mapGraph;
+    public HashMap<Node, HashSet<Node>> mapGraph;
     public HashMap<Long, Node> idMap;
     public HashMap<String, LinkedList<Node>> nodeNameMap;
     private KdTree nearestKdTree;

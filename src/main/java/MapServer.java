@@ -465,6 +465,14 @@ public class MapServer {
         return shortestRoute;
     }
 
+    public static void initializeDistanceToInfinity(HashMap<Node, Double> distance,
+                                                    HashMap<Node, ? extends Set<Node>> mapGraph) {
+        double INFINITY = Double.POSITIVE_INFINITY;
+        for (Node n : mapGraph.keySet()) {
+            distance.put(n, INFINITY);
+        }
+    }
+
     /**
      * Use A* search algorithm to get the shortest route from the start node to end node
      * Prority associated with a node: f(n) = g(n) + h(n)
@@ -486,13 +494,15 @@ public class MapServer {
                 return 0;
         });
 
-        start.setGScore(0);
+        final HashMap<Long, Long> cameFrom = new HashMap<>();
+        final HashMap<Node, Double> distanceFrom = new HashMap<>();
+        initializeDistanceToInfinity(distanceFrom, g.mapGraph);
+        final HashSet<Node> closedList = new HashSet<>();
+
+        distanceFrom.put(start, 0.0);
         double start_fscore = start.distanceBetweenNodes(end);
         start.setFScore(start_fscore);
         openQueue.add(start);
-
-        final HashMap<Long, Long> cameFrom = new HashMap<>();
-        final HashSet<Node> closedList = new HashSet<>();
 
          while (!openQueue.isEmpty()) {
              // Pop node with the lowest fScore
@@ -509,10 +519,11 @@ public class MapServer {
                 if (closedList.contains(neighbor)) continue;
 
                 double distanceBetweenTwoNodes = neighbor.distanceBetweenNodes(currentNode);
-                double tentative_gScore = distanceBetweenTwoNodes + currentNode.getGScore();
+                double currentNode_GScore = distanceFrom.get(currentNode);
+                double tentative_gScore = distanceBetweenTwoNodes + currentNode_GScore;
 
-                if (tentative_gScore < neighbor.getGScore()) {
-                    neighbor.setGScore(tentative_gScore);
+                if (tentative_gScore < distanceFrom.get(neighbor)) {
+                    distanceFrom.put(neighbor, tentative_gScore);
                     double heuristic = neighbor.distanceBetweenNodes(end);
                     neighbor.setFScore(tentative_gScore + heuristic);
                     cameFrom.put(neighbor.id, currentNode.id);

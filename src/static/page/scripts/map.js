@@ -185,6 +185,16 @@ $( document ).ready(function() {
             case 187: //equals/plus
                 zoomIn();
                 break;
+            case 27:  // esc
+                $.get({
+                            async: true,
+                            url: clear_route,
+                            success: function(data) {
+                                dest.style.visibility = 'hidden';
+                                update();
+                            },
+                        });
+                break;
         }
     };
 
