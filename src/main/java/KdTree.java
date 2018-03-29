@@ -138,7 +138,7 @@ public class KdTree {
         return nearest;
     }
 
-    // Calculated the distance squared of a point to a box
+    // Calculates the distance squared of a point to a box
     // Distance is zero for any point contained in the box
     public double distanceSquaredPointToBox(double[] box, Node point) {
         double dx = 0.0;

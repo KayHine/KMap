@@ -311,7 +311,8 @@ public class MapServer {
                 int point1_y = getPixelPositionOffset(point1, minLat, latScale, minLon, lonScale, "lat");
                 int point2_x = getPixelPositionOffset(point2, minLat, latScale, minLon, lonScale, "lon");
                 int point2_y = getPixelPositionOffset(point2, minLat, latScale, minLon, lonScale, "lat");
-                graphics2D.drawLine(point1_x, point1_y, point2_x, point2_y);
+                graphics2D.drawLine(rasteredImage.getMinX() + point1_x, rasteredImage.getMinY() + point1_y,
+                        rasteredImage.getMinX() + point2_x, rasteredImage.getMinY() + point2_y);
             }
         }
         /* ------------------------*/
