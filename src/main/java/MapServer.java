@@ -478,24 +478,27 @@ public class MapServer {
         // Using cool Lambda function to create anonymous Comparator function class
         // to sort Nodes based on calculated heuristic
         final Queue<Node> openQueue = new PriorityQueue<>(11, (node1, node2) -> {
-            if (node1.getHeuristic() < node2.getHeuristic())
+            if (node1.getFScore() < node2.getFScore())
                 return -1;
-            else if (node1.getHeuristic() > node2.getHeuristic())
+            else if (node1.getFScore() > node2.getFScore())
                 return 1;
             else
                 return 0;
         });
 
-        start.setDist(0);
-        start.setHeuristic(end);
+        start.setGScore(0);
+        double start_fscore = start.distanceBetweenNodes(end);
+        start.setFScore(start_fscore);
         openQueue.add(start);
 
         final HashMap<Long, Long> cameFrom = new HashMap<>();
         final HashSet<Node> closedList = new HashSet<>();
 
          while (!openQueue.isEmpty()) {
+             // Pop node with the lowest fScore
             Node currentNode = openQueue.poll();
 
+            // Goal found
             if (currentNode.equals(end)) {
                 return reconstructPath(cameFrom, currentNode.id);
             }
@@ -505,19 +508,17 @@ public class MapServer {
             for (Node neighbor : g.getNeighbors(currentNode)) {
                 if (closedList.contains(neighbor)) continue;
 
-                double tentativeDist = neighbor.distanceBetweenNodes(currentNode) + currentNode.getDist();
+                double distanceBetweenTwoNodes = neighbor.distanceBetweenNodes(currentNode);
+                double tentative_gScore = distanceBetweenTwoNodes + currentNode.getGScore();
 
-                if (!openQueue.contains(neighbor)) {
+                if (tentative_gScore < neighbor.getGScore()) {
+                    neighbor.setGScore(tentative_gScore);
+                    double heuristic = neighbor.distanceBetweenNodes(end);
+                    neighbor.setFScore(tentative_gScore + heuristic);
                     cameFrom.put(neighbor.id, currentNode.id);
-                    neighbor.setDist(tentativeDist);
-                    neighbor.setHeuristic(end);
-                    openQueue.add(neighbor);
-                }
-                else {
-                    if (neighbor.getDist() > tentativeDist) {
-                        cameFrom.put(neighbor.id, currentNode.id);
-                        neighbor.setDist(tentativeDist);
-                        neighbor.setHeuristic(end);
+
+                    if (!openQueue.contains(neighbor)) {
+                        openQueue.add(neighbor);
                     }
                 }
             }

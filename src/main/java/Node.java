@@ -5,10 +5,8 @@ public class Node {
     public double longitude;
     public String name;
     public boolean isHighway;
-    private double dist;         // distance from the source (default value is INFINITY)
-    private double euclidian;    // euclidian distance to destination
-    private double heuristic;    // f = dist + euclidian
-
+    private double gScore;         // distaance from the source (default value is INFINITY)
+    private double fScore;    // f = gScore + euclidian
     private double INFINITY = Double.POSITIVE_INFINITY;
 
     public Node(long id, double lon, double lat) {
@@ -16,31 +14,28 @@ public class Node {
         this.latitude = lat;
         this.longitude = lon;
         this.isHighway = false;
-        this.dist = INFINITY;
-        this.heuristic = INFINITY;
+        this.gScore = INFINITY;
+        this.fScore = INFINITY;
     }
 
     public void setName(String name) {
         this.name = name;
     }
 
-    public double getDist() {
-        return dist;
+    public double getGScore() {
+        return gScore;
     }
 
-    public void setDist(double dist) {
-        this.dist = dist;
+    public void setGScore(double gScore) {
+        this.gScore = gScore;
     }
 
-    public void setHeuristic(Node destination) {
-        euclidian = Math.sqrt(Math.pow(destination.longitude - this.longitude, 2) +
-                                Math.pow(destination.latitude - this.latitude, 2));
-
-        heuristic = dist + euclidian;
+    public void setFScore(double fScore) {
+        this.fScore = fScore;
     }
 
-    public double getHeuristic() {
-        return this.heuristic;
+    public double getFScore() {
+        return this.fScore;
     }
 
     public double distanceBetweenNodes(Node destination) {
