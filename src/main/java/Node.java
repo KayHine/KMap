@@ -5,7 +5,6 @@ public class Node {
     public double longitude;
     public String name;
     public boolean isHighway;
-    private double gScore;         // distaance from the source (default value is INFINITY)
     private double fScore;    // f = gScore + euclidian
     private double INFINITY = Double.POSITIVE_INFINITY;
 
@@ -14,20 +13,11 @@ public class Node {
         this.latitude = lat;
         this.longitude = lon;
         this.isHighway = false;
-        this.gScore = INFINITY;
         this.fScore = INFINITY;
     }
 
     public void setName(String name) {
         this.name = name;
-    }
-
-    public double getGScore() {
-        return gScore;
-    }
-
-    public void setGScore(double gScore) {
-        this.gScore = gScore;
     }
 
     public void setFScore(double fScore) {

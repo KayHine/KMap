@@ -289,59 +289,70 @@ public class MapServer {
             x += TILE_SIZE;
         }
 
-        /* ------------------------*/
-        // Build route if it exists
-        if (route != null && !route.isEmpty()) {
-            Graphics2D graphics2D = (Graphics2D) graphics;
-            BasicStroke line = new BasicStroke(ROUTE_STROKE_WIDTH_PX, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
-            graphics2D.setStroke(line);
-            graphics2D.setPaint(ROUTE_STROKE_COLOR);
-            // Get raster image bounds
-            double minLat = ((LinkedList<QTreeNode>) rasterNodes).getLast().lrlat;
-            double maxLat = ((LinkedList<QTreeNode>) rasterNodes).getFirst().ullat;
-            double minLon = ((LinkedList<QTreeNode>) rasterNodes).getFirst().ullon;
-            double maxLon = ((LinkedList<QTreeNode>) rasterNodes).getLast().lrlon;
-            // Calculate scale pixel/coordinate
-            double lonScale = pixelPerCoordinate(minLon, maxLon, minLat, maxLat, rasteredImage, "lon");
-            double latScale = pixelPerCoordinate(minLon, maxLon, minLat, maxLat, rasteredImage, "lat");
-            for (int i = 0; i < route.size() - 1; i++) {
-                Node point1 = g.getNodeByID(route.get(i));
-                Node point2 = g.getNodeByID(route.get(i + 1));
-                int point1_x = getPixelPositionOffset(point1, minLat, latScale, minLon, lonScale, "lon");
-                int point1_y = getPixelPositionOffset(point1, minLat, latScale, minLon, lonScale, "lat");
-                int point2_x = getPixelPositionOffset(point2, minLat, latScale, minLon, lonScale, "lon");
-                int point2_y = getPixelPositionOffset(point2, minLat, latScale, minLon, lonScale, "lat");
-                graphics2D.drawLine(rasteredImage.getMinX() + point1_x, rasteredImage.getMinY() + point1_y,
-                        rasteredImage.getMinX() + point2_x, rasteredImage.getMinY() + point2_y);
-            }
+        if (!route.isEmpty()) {
+            rasterRoute(graphics, rasteredImage, rasterNodes);
         }
-        /* ------------------------*/
 
         return rasteredImage;
     }
 
-    public static int getPixelPositionOffset(Node point, double minLat, double latScale, double minLon,
+    /**
+     * Take the graphics and rasteredImage and draw the route lines based on the Nodes in route
+     *
+     * @param graphics
+     * @param rasteredImage
+     * @param rasterNodes
+     */
+    public static void rasterRoute(Graphics graphics, BufferedImage rasteredImage, Iterable<QTreeNode> rasterNodes) {
+        // Set the graphics for the line
+        Graphics2D graphics2D = (Graphics2D) graphics;
+        BasicStroke line = new BasicStroke(ROUTE_STROKE_WIDTH_PX, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
+        graphics2D.setStroke(line);
+        graphics2D.setPaint(ROUTE_STROKE_COLOR);
+        // Get raster image bounds
+        double ullat = ((LinkedList<QTreeNode>) rasterNodes).getFirst().ullat;
+        double ullon = ((LinkedList<QTreeNode>) rasterNodes).getFirst().ullon;
+        double lrlat = ((LinkedList<QTreeNode>) rasterNodes).getLast().lrlat;
+        double lrlon = ((LinkedList<QTreeNode>) rasterNodes).getLast().lrlon;
+        // Calculate scale pixel/coordinate
+        double lonScale = coordinatePerPixel(ullon, ullat, lrlon, lrlat, rasteredImage, "lon");
+        double latScale = coordinatePerPixel(ullon, ullat, lrlon, lrlat, rasteredImage, "lat");
+        // Calculate position for each Node and draw the line
+        for (int i = 0; i < route.size() - 1; i++) {
+            Node point1 = g.getNodeByID(route.get(i));
+            Node point2 = g.getNodeByID(route.get(i + 1));
+            int point1_x = getPixelPositionOffset(point1, ullat, latScale, ullon, lonScale, "lon");
+            int point1_y = getPixelPositionOffset(point1, ullat, latScale, ullon, lonScale, "lat");
+            int point2_x = getPixelPositionOffset(point2, ullat, latScale, ullon, lonScale, "lon");
+            int point2_y = getPixelPositionOffset(point2, ullat, latScale, ullon, lonScale, "lat");
+            graphics2D.drawLine(point1_x, point1_y,
+                    point2_x, point2_y);
+        }
+    }
+
+    public static int getPixelPositionOffset(Node point, double ullat, double latScale, double ullon,
                                        double lonScale, String coord) {
         int pos = 0;
         if (coord == "lat") {
-            pos = (int) ((point.latitude - minLat) * latScale);
+            // Need to inverse this because Y is increasing downwards for the buffer image
+            pos = (int) (- (point.latitude - ullat) * (1 / latScale) - 5);
         }
         else if (coord == "lon") {
-            pos = (int) ((point.longitude - minLon) * lonScale);
+            pos = (int) ((point.longitude - ullon) * (1 / lonScale) - 7);
         }
         return pos;
     }
 
-    public static double pixelPerCoordinate(double minLon, double maxLon, double minLat, double maxLat,
+    public static double coordinatePerPixel(double ullon, double ullat, double lrlon, double lrlat,
                                             BufferedImage rasteredImage, String coord) {
         double scale = 0;
-        if (coord == "lat") {
+        if (coord == "lon") {
 
-            scale = rasteredImage.getHeight() / (maxLat - minLat);
+            scale = (lrlon - ullon) / rasteredImage.getWidth();
         }
-        else if (coord == "lon") {
+        else if (coord == "lat") {
 
-            scale = rasteredImage.getWidth() / (maxLon - minLon);
+            scale = (ullat - lrlat) / rasteredImage.getHeight();
         }
 
         return scale;
@@ -457,6 +468,7 @@ public class MapServer {
         double end_lon = params.get("end_lon");
         double end_lat = params.get("end_lat");
 
+        // Utilize the graph's kdTree to find nearest Node
         Node startNode = g.getNearestNode(start_lon, start_lat);
         Node endNode = g.getNearestNode(end_lon, end_lat);
 
